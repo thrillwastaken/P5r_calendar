@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#E8002D">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="P5R Guide">
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>P5R Daily Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --red:#E8002D;--red-dark:#9C001F;--red-glow:rgba(232,0,45,0.18);
+  --black:#090909;--card:#161616;--card2:#1d1d1d;
+  --border:rgba(255,255,255,0.07);--text:#EFEFEF;--muted:#777;
+  --gold:#D4AF37;--blue:#3B82F6;--green:#22C55E;--purple:#A855F7;--pink:#EC4899;
+  --save:#FF6B00;--save-bg:rgba(255,107,0,0.12);--save-border:rgba(255,107,0,0.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;display:flex;flex-direction:column;height:100dvh}
+
+/* HEADER */
+.hdr{flex-shrink:0;background:rgba(9,9,9,0.97);border-bottom:1px solid var(--border);padding:8px 14px 6px}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--red);text-shadow:0 0 14px var(--red-glow)}
+.logo span{color:var(--text)}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.hdr-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.hdr-date strong{color:var(--text)}
+.sa-hdr-badge{background:var(--save-bg);border:1px solid var(--save-border);color:var(--save);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.5px;display:none;animation:pulse-badge 1.5s ease-in-out infinite}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.6}}
+.prog-row{display:flex;align-items:center;gap:8px}
+.prog-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--red);border-radius:2px;transition:width .4s}
+.prog-txt{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0}
+.pal-strip{display:flex;align-items:center;gap:7px;margin-top:5px;padding:4px 9px;border-radius:5px;font-size:11px}
+.pal-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pal-name{font-weight:600}
+.pal-dl{color:var(--muted);margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px}
+
+/* VIEWS */
+.view{display:none;flex:1;overflow:hidden;flex-direction:column}
+.view.active{display:flex}
+
+/* CALENDAR */
+.mnav{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.mnav-btn{width:30px;height:30px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.mnav-btn:hover{border-color:var(--red)}
+.mnav-btn:disabled{opacity:.3;cursor:not-allowed}
+.mlabel{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);padding:3px 8px 1px;flex-shrink:0}
+.dow{text-align:center;font-size:9px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;padding:3px 0}
+.dow:first-child{color:rgba(232,0,45,.5)}
+.dow:last-child{color:rgba(59,130,246,.5)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:4px 8px;flex:1;align-content:start;overflow-y:auto}
+.cday{aspect-ratio:1;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;background:var(--card);border:1px solid var(--border);transition:all .12s;min-height:38px}
+.cday:hover{border-color:rgba(232,0,45,.4)}
+.cday.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none}
+.cday.cur{border-color:var(--red);box-shadow:0 0 8px var(--red-glow)}
+.cday.done{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.2)}
+.cday.pal{background:rgba(232,0,45,.06)}
+.cday.has-sa{box-shadow:0 0 0 2px var(--save) !important;border-color:var(--save) !important}
+.cday.has-sa.done{box-shadow:none !important;border-color:rgba(34,197,94,.2) !important}
+.cnum{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;line-height:1}
+.cpip{width:4px;height:4px;border-radius:50%;margin-top:2px}
+.ccheck{position:absolute;top:2px;right:3px;font-size:8px;color:var(--green)}
+.csa-dot{position:absolute;top:2px;left:3px;font-size:9px}
+.cno-data{opacity:.25;cursor:default;pointer-events:none}
+
+/* DAY VIEW */
+.dv{flex-direction:column;overflow:hidden}
+.dnav{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.back-btn{background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:5px 9px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
+.dnav-title{flex:1;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1.5px;text-align:center}
+.arrows{display:flex;gap:5px}
+.arr{width:30px;height:30px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.arr:hover{border-color:var(--red);color:var(--red)}
+.arr:disabled{opacity:.3;cursor:not-allowed}
+.arr.nxt{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
+.arr.nxt:hover{background:var(--red-dark)}
+.dscroll{flex:1;overflow-y:auto;padding:12px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+
+/* SAVE ABUSE BANNER */
+.sa-banner{background:var(--save-bg);border:1.5px solid var(--save-border);border-radius:10px;padding:12px 14px;margin-bottom:10px;position:relative;overflow:hidden}
+.sa-banner::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--save)}
+.sa-banner-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sa-icon{font-size:18px}
+.sa-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--save)}
+.sa-notes{list-style:none;padding:0;margin:0}
+.sa-notes li{font-size:12px;color:#FFD0A8;line-height:1.5;padding:3px 0;border-bottom:1px solid rgba(255,107,0,0.1)}
+.sa-notes li:last-child{border-bottom:none}
+.sa-notes li::before{content:'↻ ';color:var(--save);font-weight:700}
+
+/* DAY HERO */
+.dhero{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px;margin-bottom:10px;position:relative;overflow:hidden}
+.dhero::before{content:'';position:absolute;top:0;right:0;width:70px;height:70px;background:var(--red);opacity:.04;transform:rotate(45deg) translate(18px,-28px)}
+.dtype{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:2px 7px;border-radius:3px;margin-bottom:7px}
+.t-story{background:rgba(59,130,246,.13);color:var(--blue)}
+.t-palace{background:rgba(232,0,45,.13);color:var(--red)}
+.t-confidant{background:rgba(168,85,247,.13);color:var(--purple)}
+.t-free{background:rgba(34,197,94,.1);color:var(--green)}
+.t-exam{background:rgba(212,175,55,.13);color:var(--gold)}
+.dbigdate{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;line-height:1;margin-bottom:1px}
+.ddow{font-size:11px;color:var(--muted)}
+
+/* SEGMENTS */
+.seg{background:var(--card);border:1px solid var(--border);border-radius:9px;margin-bottom:9px;overflow:hidden}
+.seg-hdr{display:flex;align-items:center;gap:9px;padding:8px 11px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.seg-icon{font-size:15px}
+.seg-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.step-row{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.step-row:last-child{border-bottom:none}
+.step-row:hover{background:rgba(255,255,255,.02)}
+.step-row.sa-step{background:rgba(255,107,0,.05);border-left:3px solid var(--save)}
+.step-row.sa-step:hover{background:rgba(255,107,0,.08)}
+.step-chk{width:19px;height:19px;border-radius:4px;border:1.5px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s;font-size:10px;font-weight:700}
+.step-chk.done{background:var(--red);border-color:var(--red);color:#fff}
+.step-chk.done::after{content:'✓'}
+.step-body{flex:1;min-width:0}
+.step-label{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
+.step-label.done-txt,.step-content.done-txt{text-decoration:line-through;color:var(--muted)}
+.step-content{font-size:12px;color:var(--muted);line-height:1.5}
+.badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin:2px 2px 0 0;font-family:'JetBrains Mono',monospace}
+.bk{background:rgba(59,130,246,.15);color:var(--blue)}
+.bg{background:rgba(239,68,68,.12);color:#EF4444}
+.bc{background:rgba(236,72,153,.12);color:var(--pink)}
+.bki{background:rgba(34,197,94,.12);color:var(--green)}
+.bp{background:rgba(251,191,36,.12);color:#FBB524}
+.bm{background:rgba(212,175,55,.12);color:var(--gold)}
+.bco{background:rgba(168,85,247,.12);color:var(--purple)}
+
+/* DONE BTN */
+.done-btn{width:100%;padding:13px;background:var(--red);border:none;border-radius:9px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;cursor:pointer;margin-top:3px;margin-bottom:3px;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.done-btn:hover{background:var(--red-dark)}
+.done-btn.completed{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--green)}
+
+/* OVERVIEW */
+.ov-scroll{flex:1;overflow-y:auto;padding:10px}
+.ov-legend{display:flex;flex-wrap:wrap;gap:10px;padding:4px 4px 10px;font-size:10px;color:var(--muted)}
+.ov-legend-item{display:flex;align-items:center;gap:4px}
+.ov-legend-dot{width:10px;height:10px;border-radius:2px}
+.ov-month{margin-bottom:14px}
+.ov-mlabel{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:var(--muted);padding:3px 4px 5px;display:flex;align-items:center;justify-content:space-between}
+.ov-done{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--green)}
+.ov-week{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
+.ov-cell{height:22px;border-radius:4px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all .1s;color:var(--muted);position:relative}
+.ov-cell.empty{background:transparent;border-color:transparent;cursor:default}
+.ov-cell.done{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.3);color:var(--green)}
+.ov-cell.cur{border-color:var(--red);color:var(--red)}
+.ov-cell.pal{background:rgba(232,0,45,.07)}
+.ov-cell.has-sa{border-color:var(--save) !important;color:var(--save)}
+.ov-cell.has-sa.done{border-color:rgba(34,197,94,.3) !important;color:var(--green)}
+.ov-cell.no-data{opacity:.2;cursor:default;pointer-events:none}
+.ov-cell:hover:not(.empty):not(.no-data){border-color:var(--red)}
+
+/* BOTTOM NAV */
+.bnav{flex-shrink:0;background:rgba(9,9,9,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);padding-bottom:env(safe-area-inset-bottom,4px)}
+.nitem{display:flex;flex-direction:column;align-items:center;padding:7px 6px 4px;cursor:pointer;color:var(--muted);transition:color .15s;gap:2px;border:none;background:none}
+.nitem.active{color:var(--red)}
+.nicon{font-size:18px}
+.nlabel{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="logo">P5R <span>DAILY GUIDE</span></div>
+    <div class="hdr-right">
+      <div class="sa-hdr-badge" id="sa-badge">💾 SAVE ABUSE</div>
+      <div class="hdr-date" id="hdr-date">Day <strong>1</strong> of 279</div>
+    </div>
+  </div>
+  <div class="prog-row">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="prog-txt" id="prog-txt">0%</div>
+  </div>
+  <div class="pal-strip" id="pal-strip" style="display:none"></div>
+</div>
+
+<div class="view active" id="view-cal">
+  <div class="mnav">
+    <button class="mnav-btn" id="prev-m" onclick="changeMonth(-1)">&#8249;</button>
+    <div class="mlabel" id="m-label">APRIL</div>
+    <button class="mnav-btn" id="next-m" onclick="changeMonth(1)">&#8250;</button>
+  </div>
+  <div class="dow-row">
+    <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div>
+    <div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+</div>
+
+<div class="view" id="view-day">
+  <div class="dv">
+    <div class="dnav">
+      <button class="back-btn" onclick="showView('cal')">&#8592; Cal</button>
+      <div class="dnav-title" id="dnav-title">APR 9</div>
+      <div class="arrows">
+        <button class="arr" id="prev-d" onclick="navDay(-1)">&#8249;</button>
+        <button class="arr nxt" id="next-d" onclick="navDay(1)">Next &#8250;</button>
+      </div>
+    </div>
+    <div class="dscroll" id="dscroll"></div>
+  </div>
+</div>
+
+<div class="view" id="view-ov">
+  <div class="ov-scroll" id="ov-scroll"></div>
+</div>
+
+<div class="bnav">
+  <button class="nitem active" onclick="showView('cal')" id="nav-cal">
+    <div class="nicon">&#128197;</div><div class="nlabel">Calendar</div>
+  </button>
+  <button class="nitem" onclick="gotoCurrentDay()" id="nav-day">
+    <div class="nicon">&#128203;</div><div class="nlabel">Today</div>
+  </button>
+  <button class="nitem" onclick="showView('ov')" id="nav-ov">
+    <div class="nicon">&#128506;</div><div class="nlabel">Overview</div>
+  </button>
+</div>
+
+<script>
+const SCHEDULE=[
+{d:`April 9th`,m:4,day:9,type:`free`,tags:["exam"],sa:[],steps:[{t:`Afternoon`,l:`Cleaning`,c:`Examine the cardboard box, then check your surroundings to clean your room. Evening`},{t:`Evening`,l:`Bed`,c:`You can examine the bed to go to sleep. If you sleep anytime when the game doesn't force you to, you will earn bonus points for a random Confidant. Unless we are forced to go to sleep, we will be ignoring the bed. However, today is one of those days where we are forced to sleep.`}]},
+{d:`April 10th`,m:4,day:10,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Sleep`,c:`Go to sleep.`}]},
+{d:`April 11th`,m:4,day:11,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Sleep`,c:`Go to sleep.`}]},
+{d:`April 12th`,m:4,day:12,type:`free`,tags:["confidant", "social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Question: Tell me what the Devil's Dictionary defined as the chief factor in the progress of the human race. Option C: "Villains." Knowledge UP +2 ( After School`},{t:`After School`,l:`Chariot Confidant Rank 1 (Auto)`,c:`Confidants are bonds of power represented by deals you have made with other people. These will provide a multitude of benefits during the game. We will be completing every Confidant, and they are our biggest focus for this walkthrough. Evening`},{t:`Evening`,l:`Cardboard Box`,c:`By checking the cardboard box, you will receive any DLC you have purchased. Also, if you have Persona 5 Save Data, you will obtain some extra bonuses. These are not required for the walkthrough, but may help out if you are having trouble.`},{t:`Evening`,l:`Sleep`,c:`Go to sleep.`},{t:`Evening`,l:`Fool Confidant Rank 1 (Auto)`,c:`New Ability Wild Talk Arcana Burst`}]},
+{d:`April 13th`,m:4,day:13,type:`free`,tags:["free"],sa:[],steps:[{t:`Afternoon`,l:`Fast Travel`,c:`You can now Fast Travel across the city. Be warned that traveling to some areas costs a certain amount of Yen. Evening`},{t:`Evening`,l:`Sleep`,c:`Go to sleep.`}]},
+{d:`April 14th`,m:4,day:14,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Sleep`,c:`Go to sleep.`}]},
+{d:`April 15th`,m:4,day:15,type:`free`,tags:["palace", "confidant"],sa:[],steps:[{t:`After School`,l:`Lovers Confidant Rank 1 (Auto)`,c:`Evening`},{t:`Evening`,l:`Magician Confidant Rank 1 (Auto)`,c:`New Ability Infiltration Tools`},{t:`Evening`,l:`Sleep`,c:`Go to sleep.`}]},
+{d:`April 16th`,m:4,day:16,type:`free`,tags:["palace"],sa:[],steps:[{t:`After School`,l:`Clinic`,c:`You will be given the chance to buy items for Palaces. For now, save your money. Money is scare early on, and there are other things we will need to spend our hard earned cash on. Evening`},{t:`Evening`,l:`Sleep`,c:`Go to sleep.`}]},
+{d:`April 17th`,m:4,day:17,type:`free`,tags:["palace", "exam", "social"],sa:[],steps:[{t:`Daytime`,l:`Airsoft Shop`,c:`Obtained 5,000 Yen You can now buy equipment. Just like the clinic, we are gonna save our money for now. Evening`},{t:`Evening`,l:`Infiltration Tools`,c:`Make sure to save before examining the desk. After cleaning the desk, you can craft tools. While there are a variety of options to choose from, I highly recommend crafting Lockpicks. There are a lot of locked treasure chests that you will come across in Palaces. Obtained Lockpick Proficiency UP +3 NOTE! Two music notes here are worth 3 points. Howe`}]},
+{d:`April 18th`,m:4,day:18,type:`free`,tags:["palace", "confidant", "social"],sa:[],steps:[{t:`After School`,l:`Library`,c:`Rent Pirate Legend`},{t:`After School`,l:`Flower Shop`,c:`Located at Flower Shop at Underground Mall in Shibuya Buy Bio Nutrients`},{t:`After School`,l:`Vending Machines`,c:`There are three vending machines that have SP healing items. I highly recommend picking these up for our trip into the Palace. The locations to find these are next to the Bathhouse in Yongen`},{t:`After School`,l:`Death Confidant Rank 1`,c:`Located at Takemi Medical Clinic in Yongen`},{t:`After School`,l:`Jaya New Ability Rejuvenation Guts UP +2 Evening`,c:`Crossword- On certain evenings you can complete crossword puzzles. These do not pass time, and are a good way to earn Knowledge. The crossword puzzle will stay the same until you complete it, so if your crossword puzzle doesn't match mine, then you missed a day. In order to complete the puzzle, you need to complete the blue word, which I will refer`},{t:`Evening`,l:`Cleaning`,c:`Clean your room. Obtained Social Thought Obtained Yoncha Walker 04`}]},
+{d:`April 19th`,m:4,day:19,type:`palace`,tags:["palace", "confidant", "social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Question: Between A and B... which line seems longer...? Option C: "They're the same." Knowledge UP +2 After School`},{t:`After School`,l:`Chariot Confidant Rank 2`,c:`NOTE! Normally you will need a Chariot Persona, but you can get away with not having one right now. Located at Classroom Building 2F in Shujin Academy Option A ("I'm counting on you."), Any ("What about them?" OR "And then you punched him?"), A ("Do you want to go back?"), C ("It's never too late, man.") (Phone call) New Ability Punk Talk Relations`},{t:`Evening`,l:`Houseplant`,c:`You can give the plant in your room nutrients. This is a good way to earn Kindness without spending time. Feed Bio Nutrients Kindness UP +3`},{t:`Evening`,l:`Read`,c:`Talk to customers in Leblanc to get them to leave. Read Pirate Legend ~ April 20th ~ Early Morning`},{t:`Early Morning`,l:`Train`,c:`Sometimes you will be able to read a book on the train. Read Pirate Legend Book Finished! Guts UP +5 After School`},{t:`After School`,l:`Library`,c:`Rent Zorro, the Outlaw`},{t:`After School`,l:`Preparations`,c:`Make any preparations you need to head into the Palace. Feel free to spend as much money as you would like. We can grind for more money in the Palace.`},{t:`After School`,l:`Metaverse`,c:`Infiltrate the Palace Metaverse`},{t:`After School`,l:`Fool Confidant Rank 2 (Auto)`,c:`New Ability Third Eye`},{t:`After School`,l:`Money Needed`,c:`Make sure to leave the Palace with at least 50,000 Yen.`},{t:`After School`,l:`Personas Needed`,c:`Before you leave, make sure you can fuse Hierophant, Lovers, Chariot, and Death. ( NOTE! Need to be at least Lv 9 for Hierophant Persona.`},{t:`Evening`,l:`Study`,c:`Study at Booth Knowledge UP +3 Knowledge UP +2`}]},
+{d:`April 21st`,m:4,day:21,type:`free`,tags:["palace", "social"],sa:["Save here \u2014 ."],steps:[{t:`Early Morning`,l:`Response`,c:`Sometimes, Party Members will ask you to head to the Palace or send the Calling Card. Unless otherwise noted, deny these invitations. I think you can still hang out with Confidants even if you do accept, but it's better to be safe than sorry. After School`},{t:`After School`,l:`Preparations`,c:`Make any preparations you need before taking on the boss. Make sure to either save 50,000 Yen or grind for it while in the Palace. This is the last time I'll remind you to prepare before entering a Palace.`},{t:`After School`,l:`Calling Card`,c:`Whenever you send the Calling Card time will pass and you will start the next day at the Palace. You will not be able to leave the Palace until you obtain the Treasure. The Palace will disappear after obtaining the Treasure, so make sure to accomplish everything in the Palace that you would like to. Send Calling Card Evening`},{t:`Evening`,l:`Crafting`,c:`Save your game Craft at Work Desk Proficiency UP +3 Proficiency UP +2 There is a random chance to make more tools than usual and earn more Proficiency than usual. From here on out, we will need to obtain two increases in Proficiency from crafting. If you only get one increase, reload and try again until you get two increases. From here on out, this`}]},
+{d:`April 22nd`,m:4,day:22,type:`free`,tags:["palace", "confidant"],sa:[],steps:[{t:`Daytime`,l:`Money Needed`,c:`Earn 50,000 Yen before leaving the Palace.`},{t:`Daytime`,l:`Personas Needed`,c:`Make sure you can fuse a Hierophant, Lovers, Chariot, and Death Persona before leaving the Palace. NOTE! Need to be at Lv 9 to fuse Hierophant.`},{t:`Daytime`,l:`Treasure`,c:`Steal the Treasure`},{t:`Daytime`,l:`Magician Confidant Rank 2 (Auto)`,c:`Evening`},{t:`Evening`,l:`Read`,c:`Read Zorro, the Outlaw`}]},
+{d:`April 23rd`,m:4,day:23,type:`free`,tags:["confidant", "exam", "social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Question: Between music, theater, and chariot racing, which sport did Nero win when he participated in the Olympics? Option D: "All of them." Knowledge UP +2 After School`},{t:`After School`,l:`Secondhand Store`,c:`Located at Secondhand Shop at Backstreets in Yongen`},{t:`After School`,l:`Jaya Buy DVD Player`,c:`Bookstore- Located at Taiheido Bookstore at Central Street in Shibuya Buy all books available Tidying the Heart Buchiko's Story The Art of Charm`},{t:`After School`,l:`DVD Rental`,c:`Located at Rental Shop at Central Street in Shibuya Buy Rental Membership Rent The X Folders`},{t:`After School`,l:`Part`,c:`Time Job- Examine Part`},{t:`After School`,l:`Flower Shop`,c:`Buy 2 Bio Nutrients`},{t:`After School`,l:`Chariot Confidant Rank 3`,c:`NOTE! From here on out we will need a Persona of the matching arcana for every Confidant (Except Rank 1 and Rank 10). Persona needed from now on Option A ("Let's not fight."), A ("Calm down, Ryuji"), A ("I can't exactly blame you.") (Phone call) New Ability Follow Up Relationship will not become closer soon Evening`},{t:`Evening`,l:`Hierophant Confidant Rank 1`,c:`Located at Cafe Leblanc in Yongen`}]},
+{d:`April 24th`,m:4,day:24,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Shopping Program`,c:`You can check the TV downstairs to purchase items on Sundays. They sometimes sell exclusive items. Only a couple of these items are needed for the walkthrough, so buy whatever you like. Just make sure to keep a nice stack of cash on hand for other things we may need.`},{t:`Daytime`,l:`Aojiru Juice`,c:`Every Sunday, you can buy juice that will increase a Status Parameter. The specific Status Parameter rotates each time you buy juice. If you don't get the same increase I do, then you missed a day. Located at Drink Stand at Underground Walkway in Shibuya Buy Beauty Aojiru Charm UP +2`},{t:`Daytime`,l:`Movies`,c:`Located at Theater at Central Street in Shibuya Buy a Movie Ticket Guts UP +5 Guts Rank Up! Milquetoast to Bold Evening`},{t:`Evening`,l:`Bath`,c:`Located at Bathhouse at Backstreets in Yongen`},{t:`Evening`,l:`Jaya Take a bath Charm UP +5 Charm Rank Up! Existent to Head`,c:`turning`}]},
+{d:`April 25th`,m:4,day:25,type:`free`,tags:["confidant", "social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Zorro, the Outlaw Book Finished! Kindness UP +5 Morning`},{t:`Morning`,l:`Lesson`,c:`Ann: "What's that phrase originally meant to convey? 'My country, right or wrong'?" Option A: "You unquestioningly support it." Ann: "But the original meaning is different? So I guess it'd be something like..." Option C: "You have a duty to correct it." Lovers +2 Charm UP +2 NOTE! Confidants get 1 point for every music note. So two music notes equa`},{t:`After School`,l:`Library`,c:`Rent The Alluring Dancer`},{t:`After School`,l:`Vending Machines`,c:`Can restock for SP items. Restocks every Monday. This is the last time I'll mention this.`},{t:`After School`,l:`Death Confidant Rank 2`,c:`Requires Guts Rank Bold Persona needed from now on Option A ("I have a bad heart."), A ("I agree"), A ("I'm totally fine.") (Phone call) Guts UP +2 Relationship will become closer soon Evening`},{t:`Evening`,l:`Hierophant Confidant Rank 2`,c:`Persona needed from now on Option A ("Making coffee."), B ("That guy seemed suspicious."), A ("I want the ladies to love me."), A ("Got it.") (Phone call) New Ability Coffee Basics Kindness UP +3 Relationship will not become closer soon`}]},
+{d:`April 26th`,m:4,day:26,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Study`,c:`Study at Library at Shujin Academy in Aoyama`},{t:`After School`,l:`Itchome Guts UP +2 Knowledge UP +2 Evening`,c:`Coffee- Brew Coffee at Cafe Leblanc in Yongen`}]},
+{d:`April 27th`,m:4,day:27,type:`free`,tags:["confidant", "social"],sa:[],steps:[{t:`After School`,l:`Chariot Confidant Spend Time`,c:`Relationship will become closer soon Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Blossom Down 2: Picnic Across 1: Bud Across 2: Spring Knowledge UP +2`},{t:`Evening`,l:`Hierophant Confidant Rank 3`,c:`Option A ("Medium`}]},
+{d:`April 28th`,m:4,day:28,type:`free`,tags:["confidant", "social"],sa:[],steps:[{t:`After School`,l:`Chariot Confidant Rank 4`,c:`Option B ("Are you worried about him?"), A ("But you're doing great.") New Hangout Spot Ogikubo New Ability Stealth Dash Relationship will become closer soon`},{t:`After School`,l:`Trophy`,c:`Obtained Tokyo Tourist Trophy! Went to a Hangout Spot with someone. Evening`},{t:`Evening`,l:`Bath`,c:`Take a bath Charm UP +3`}]},
+{d:`April 29th`,m:4,day:29,type:`free`,tags:["confidant", "social"],sa:[],steps:[{t:`Daytime`,l:`Death Confidant Rank 3`,c:`Option Any ("What was that about?" OR "Was that an emergency?"), Any ("A medical error?" OR "What do you mean?"), A ("I don't mind."), A ("Of course not.") (Phone call) New Ability Sterilization Guts UP +2 Relationship will become closer soon Evening`},{t:`Evening`,l:`Bath`,c:`Take a bath Charm UP +3`}]},
+{d:`April 30`,m:4,day:30,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read The Alluring Dancer Morning`},{t:`Morning`,l:`Lesson`,c:`Morgana: "First off, the 'wunder' part probably means..." Option B: "Wonder." Morgana: "Next, the 'kind' part. That's probably..." Option B: "Child." Morgana: "Yeah, that's gotta be it. 'Kind' means a child... or at least a young guy, in your case." Option C: "A prodigy." Knowledge UP +2 After School`},{t:`After School`,l:`Triple Seven`,c:`Located at Convenience Store at Central Street in Shibuya Work at Triple Seven Charm UP +3`},{t:`After School`,l:`Trophy`,c:`Obtained Punch That Clock Trophy! Worked a part`},{t:`After School`,l:`time job. Evening`,c:`Bath- Take a bath Charm UP +3 ~Monthly Progress~ Confidants Arcana # Confidant Arcana Status N/A Prison Master Fool NEW! Rank 2 1 Morgana Magician NEW! Rank 2 5 Sojiro Sakura Hierophant NEW! Rank 3 6 Ann Takamaki Lovers NEW! Rank 1 7 Ryuji Sakamoto Chariot NEW! Rank 4 13 Back`}]},
+{d:`May 1st`,m:5,day:1,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Juice`,c:`Buy Vitality Aojiru Proficiency UP +2`},{t:`Daytime`,l:`Part`,c:`Time Job- Apply for Rafflesia Job (Requires Charm Rank Head`},{t:`Daytime`,l:`turning)`,c:`Triple Seven- Work at Triple Seven Chariot +1 Will become closer Charm UP +3 NOTE! No clue if Chariot +1 is random, doesn't matter if you don't get it. Evening`},{t:`Evening`,l:`Bath`,c:`Take a bath Charm UP +5`}]},
+{d:`May 2nd`,m:5,day:2,type:`free`,tags:["palace", "social"],sa:["Save before: Craft \u2014 Proficiency UP +3 Proficiency Rank Up! Bumbling to Decent Proficiency UP +2"],steps:[{t:`Early Morning`,l:`Trophy`,c:`Obtained Castle of Lust Seized Trophy! Completed the Castle Palace Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Goose Down 2: Gate Across 1: Hour Across 2 (Keyword): Golden Across 3: Egg Knowledge +2`},{t:`Evening`,l:`Craft`,c:`Save Abuse Proficiency UP +3 Proficiency Rank Up! Bumbling to Decent Proficiency UP +2`}]},
+{d:`May 3rd`,m:5,day:3,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Study`,c:`Knowledge UP +3`}]},
+{d:`May 4th`,m:5,day:4,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Study`,c:`Knowledge UP +3`}]},
+{d:`May 5th`,m:5,day:5,type:`free`,tags:["social"],sa:["Save before: Chalk Dodge \u2014 for Chalk Dodge tomorrow. -Clean- Located at Bathroom Clean Leblanc Hierophant +1 Will not become closer Kindness UP +2 "],steps:[{t:`Daytime`,l:`Trophy`,c:`Obtained Phantom Thieves Assemble Trophy! Established your own squad of thieves. Evening`},{t:`Evening`,l:`Thieves Den`,c:`The Thieves Den is a hub world for extra content not found in the main game. It includes a section dedicated to the Awards you will obtain throughout the game. The Thieves Den will update regularly with new content to purchase by spending P`},{t:`Evening`,l:`Medals.`,c:`Plant- Feed Plant Bio Nutrients Kindness UP +3 Kindness Rank Up! Inoffensive to Considerate`},{t:`Evening`,l:`Chalk Dodge`,c:`Save Abuse for Chalk Dodge tomorrow.`},{t:`Evening`,l:`Clean`,c:`Located at Bathroom Clean Leblanc Hierophant +1 Will not become closer Kindness UP +2`},{t:`Evening`,l:`Trophy`,c:`Obtained Leblanc Buffer Trophy! Cleaned up in Leblanc.`},{t:`Evening`,l:`Fool Rank 3 (Auto)`,c:`New Ability Power Stock`}]},
+{d:`May 6th`,m:5,day:6,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Knowledge UP +2`},{t:`Morning`,l:`Chalk Dodge`,c:`Random chance to dodge chalk. Reload your save until you get it. Charm UP +3 After School`},{t:`After School`,l:`Moon Rank 1 (Auto)`,c:`New Ability Mishima's Support`},{t:`After School`,l:`Lovers Rank 2`,c:`Located at Classroom at Shujin Academy Requires Kindness Rank Considerate Persona needed from now on Option B, B, B, B, B (Phone call) New Ability Girl Talk Will become closer Evening`},{t:`Evening`,l:`Part`,c:`Time Job- Apply for Ore no Beko Job (Requires Proficiency Rank Decent)`},{t:`Evening`,l:`Ore no Beko`,c:`Located at Beef Bowl Shop at Central Street Work at Ore no Beko Proficiency UP +3`}]},
+{d:`May 7th`,m:5,day:7,type:`palace`,tags:["palace", "social"],sa:["Save before: Craft \u2014 Proficiency UP +3 Proficiency UP +2"],steps:[{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 Metaverse`},{t:`Morning`,l:`Request`,c:`Received Beware the Clingy Ex`},{t:`Morning`,l:`boyfriend!`,c:`Request: Beware the Clingy Ex`},{t:`Morning`,l:`boyfriend!`,c:`Located at Qimranut Area 1 Request Complete!`},{t:`Morning`,l:`Trophy`,c:`Obtained One Step at a Time Trophy! Completed a Mementos Request. Evening`},{t:`Evening`,l:`Craft`,c:`Save Abuse Proficiency UP +3 Proficiency UP +2`}]},
+{d:`May 8th`,m:5,day:8,type:`free`,tags:["social"],sa:["Save before: Ore no Beko \u2014 Sometimes you will need to remember orders. These are random. Proficiency UP +5"],steps:[{t:`Daytime`,l:`Moon Rank 2 (Auto)`,c:`NOTE! Moon Confidant will always rank up. As such, a Persona is not necessary and responses don't matter. Evening`},{t:`Evening`,l:`Shopping Program`,c:`Buy Bio Nutrients Set`},{t:`Evening`,l:`Juice`,c:`Guts UP +2`},{t:`Evening`,l:`Ore no Beko`,c:`Save Abuse Sometimes you will need to remember orders. These are random. Proficiency UP +5`}]},
+{d:`May 9th`,m:5,day:9,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Request`,c:`Received The Bark and Bite of a Bully`},{t:`After School`,l:`Chariot Rank 5`,c:`Option B, A, B, A Will become closer Evening`},{t:`Evening`,l:`Lottery`,c:`Pick up a lottery ticket. Located at Station Square`},{t:`Evening`,l:`Sun Flag`,c:`Located at Station Square (`}]},
+{d:`May 10th`,m:5,day:10,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 Knowledge Rank Up! Oblivious to Learned After School`},{t:`After School`,l:`Chariot Rank 6`,c:`Option C, A, A, Any, Any, C New Ability Harisen Recovery Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Ache Down 2: Blight Down 3: Gloom Across 1 (Keyword): Malaise`},{t:`Evening`,l:`Sun Rank 1`,c:``}]},
+{d:`May 11th`,m:5,day:11,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`May 13th`,m:5,day:13,type:`free`,tags:["free"],sa:[],steps:[{t:`Afternoon`,l:`Councillor Rank 1 (Auto)`,c:`After School`},{t:`After School`,l:`Councillor Rank 2 (Auto)`,c:`NOTE! Normally you will need a Councillor Persona, but you can get away with not having one right now. Option B ("We made a deal."), Any, A, Any, A New Ability Detox X Will become closer Evening Go to sleep`}]},
+{d:`May 14th`,m:5,day:14,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Coffee`,c:`Charm UP +2 Hierophant +1 Will not become closer`}]},
+{d:`May 15th`,m:5,day:15,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Coffee`,c:`Charm UP +2 Hierophant +1 Will not become closer`}]},
+{d:`May 16th`,m:5,day:16,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 Evening Go to sleep`}]},
+{d:`May 17th`,m:5,day:17,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Coffee`,c:`Charm UP+2 Hierophant +1 Will not become closer`}]},
+{d:`May 18th`,m:5,day:18,type:`palace`,tags:["palace", "confidant", "social"],sa:[],steps:[{t:`After School`,l:`Lottery`,c:`Claim your prize`},{t:`After School`,l:`Trophy`,c:`Obtained Easy Money Trophy! Won the lottery. Infiltrate the Palace Metaverse`},{t:`After School`,l:`Velvet Room`,c:`Enter the Velvet Room, then exit and re`},{t:`After School`,l:`enter.`,c:`Strength Rank 1- Fuse a Jack Frost with Mabufu (Silky and Berith) New Ability Group Guillotine NOTE! This Confidant ranks up by completing fusion requests, so a matching Persona isn't needed. Fusion requests can be done at anytime. I will be completing these on November 27th. If you would like help completing these fusions, I list them under Novemb`},{t:`After School`,l:`Treasure Demon`,c:`A trophy involves recruiting a Treasure Demon. It's okay if you don't get it right now. NOTE! For some reason, if you don't have an open slot in your deck, you won't get this trophy.`},{t:`After School`,l:`Trophy`,c:`Obtained The Purpose of a Thief! Obtained a Treasure Demon.`},{t:`After School`,l:`Persona Needed`,c:`Councillor`},{t:`After School`,l:`Optional`,c:`You can grind for at least 150,000 Yen and a Temperance Persona, but it is not needed until later.`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Gallery Across 1: Mural Across 2: Dali Across 3: Lovure Knowledge UP +2`},{t:`Evening`,l:`DVD`,c:`Check the TV in your room Watch The X Folders Guts UP+3`}]},
+{d:`May 19th`,m:5,day:19,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 Evening`},{t:`Evening`,l:`Study`,c:`Knowledge UP +3 Knowledge UP +2`}]},
+{d:`May 20th`,m:5,day:20,type:`free`,tags:["exam", "social"],sa:[],steps:[{t:`Daytime`,l:`Exam`,c:`Charm UP +3 After School`},{t:`After School`,l:`Councillor Rank 3`,c:`Located at Practice Building 1F at Shujin Academy Persona needed from now on Option A, A, Any, C, A, A New Ability Flow Will become closer Evening`},{t:`Evening`,l:`Chariot Rank 7`,c:`Option B, A, A New Hangout Spot Tsukishima New Ability Insta`},{t:`Evening`,l:`kill Will not become closer NOTE! In order for Insta`,c:`kill to activate, you need to dash into an enemy that is considerably weaker than you.`}]},
+{d:`May 21st`,m:5,day:21,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read The Alluring Dancer Book Finished! Charm UP +5 Morning`},{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Library`,c:`Rent The Gallant Rogue Infiltrate the Palace Metaverse`},{t:`After School`,l:`Personas Needed`,c:`Temperance`},{t:`After School`,l:`Money Needed`,c:`150,000 Yen NOTE! There is an accessory you can buy that will restore 7 SP per turn to whoever has it equipped. It costs 50,000 Yen each. If you are struggling with the Palaces, it may be a good idea to grind for money to pick a few of these up. Just make sure you have 150,000 Yen left over after buying them.`},{t:`After School`,l:`Trophy`,c:`Grab these trophies before you leave. Obtained Efficient Executioner Trophy! Performed a Group Guillotine execution. Obtained A Grand Experiment Trophy! Performed an Electric Chair execution.`},{t:`Evening`,l:`Plant`,c:`Use Mega Fertilizer Kindness UP +5`},{t:`Evening`,l:`DVD`,c:`Watch The X Folders DVD Finished! Guts UP +3`}]},
+{d:`May 22nd`,m:5,day:22,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Juice`,c:`Kindness UP +2`},{t:`Daytime`,l:`Bookstore`,c:`Medjed Menace Vague`},{t:`Daytime`,l:`Death Rank 4`,c:`Option B, A, A Guts UP +2 Will become closer Evening`},{t:`Evening`,l:`Sun Rank 2`,c:`NOTE! Because Sun Confidant is only available on Sundays it will always rank up, so a matching Persona isn't needed. New Ability Diplomacy Charm UP +3`}]},
+{d:`May 23rd`,m:5,day:23,type:`free`,tags:["social"],sa:[],steps:[{t:`Afternoon`,l:`Lesson`,c:`Option C, B, B Knowledge UP +2 After School Send Calling Card Evening`},{t:`Evening`,l:`Read`,c:`Read The Gallant Rogue`}]},
+{d:`May 24th`,m:5,day:24,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read The Gallant Rogue Book Finished! Guts UP +5 Metaverse`},{t:`Evening`,l:`Magician Rank 3 (Auto)`,c:`New Ability Follow Up`},{t:`Evening`,l:`Clean`,c:`Hierophant +1 Will become closer Kindness UP +2`},{t:`Evening`,l:`Fool Rank 4 (Auto)`,c:``}]},
+{d:`May 25th`,m:5,day:25,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Request`,c:`Received If Cats Disappeared from the City Talk to Dog`},{t:`After School`,l:`Death Rank 5`,c:`Option Any, Any, A, A New Ability Immunization Guts UP +2 Will become closer Evening`},{t:`Evening`,l:`Big Bang Challenge`,c:`Located at Big Bang Burger at Central Street Take the Challenge Guts UP +2 Knowledge UP +2 Charm UP +2 Charm Rank Up! Head`}]},
+{d:`May 26th`,m:5,day:26,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Lovers Rank 3`,c:`Option Any, Any, Any, Any, C, Any, Any, B, B, A New Hangout Spot Inokashira Park New Ability Follow Up Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Sneeze Across 1 (Keyword): Pollenosis Across 2: Nose Knowledge UP +2`},{t:`Evening`,l:`Temperance Flag`,c:`Talk to Mishima at Central Street for Operation Maidwatch (I swear it makes sense in context) Option C (Chariot +3, will become closer)`}]},
+{d:`May 27th`,m:5,day:27,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Temperance Flag`,c:`Talk to Kawakami at Classroom Building 2F`},{t:`After School`,l:`Diner`,c:`Located at Diner at Central Street Study at Diner Order Surprise Sando Guts UP +2 Guts Rank Up! Bold to Staunch Knowledge UP +2 Evening`},{t:`Evening`,l:`Temperance Rank 1`,c:`Located at Pay Phone Requires Guts Rank Staunch New Ability Slack Off`}]},
+{d:`May 28th`,m:5,day:28,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Lovers Rank 4`,c:`Option A, B, A, A, C, A New Ability Sexy Technique Will become closer Evening`},{t:`Evening`,l:`Temperance Rank 2`,c:`Persona needed from now on Option A, B, Any, Any, B Will become closer`},{t:`Evening`,l:`Invites`,c:`Sometimes Confidants will invite you to hang out the next day. These almost never rank up the Confidant, but do usually earn points for multiple Confidants. Unless otherwise noted, deny the invites.`}]},
+{d:`May 29th`,m:5,day:29,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Juice`,c:`Knowledge UP +2`},{t:`Daytime`,l:`Lovers Rank 5`,c:`Option B, B, A, Any, Any New Ability Crocodile Tears Will not become closer Evening`},{t:`Evening`,l:`Sun Rank 3`,c:`New Ability Fundraising`}]},
+{d:`May 30th`,m:5,day:30,type:`free`,tags:["social"],sa:[],steps:[{t:`Afternoon`,l:`Faith Rank 1 (Auto)`,c:`Evening`},{t:`Evening`,l:`Movie`,c:`Watch The Cake Knight Rises Kindness UP +5`}]},
+{d:`May 31st`,m:5,day:31,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option D Knowledge UP +2 After School`},{t:`After School`,l:`Lovers Spend Time`,c:`Invite to Inokashira Park Option C Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Ikebana Down 2: Nori Across 1 (Keyword): Japanese Across 2: Obi Knowledge UP +2`},{t:`Evening`,l:`Diner`,c:`Order Surprise Sando Guts UP +2 Knowledge UP +2 ~Monthly Progress~ Confidants Arcana # Confidant Arcana Status N/A Prison Master Fool Rank 4 1 Morgana Magician Rank 3 5 Sojiro Sakura Hierophant Rank 3 6 Ann Takamaki Lovers Rank 5 7 Ryuji Sakamato Chariot Rank 7 11 Twin Wardens Strength NEW! Rank 1 13 Back`}]},
+{d:`June 1st`,m:6,day:1,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Chariot Rank 8`,c:`Option Any, A, A, B, B New Ability Endure Will not become closer Evening`},{t:`Evening`,l:`Diner`,c:`Order Surprise Sando Guts UP +2 Knowledge UP +2`}]},
+{d:`June 2nd`,m:6,day:2,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Death Rank 6`,c:`Option Any, Any, B, A Guts UP +2 Will become closer Evening`},{t:`Evening`,l:`Hierophant Rank 4`,c:`Option A, B, A New Ability Leblanc Curry Kindness UP +3 Will not become closer`}]},
+{d:`June 3rd`,m:6,day:3,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Buchiko's Story Morning`},{t:`Morning`,l:`Class`,c:`Read Buchiko's Story Book Finished! Kindness UP +5 After School`},{t:`After School`,l:`Lovers Rank 6`,c:`Option A, Any, Any, C, B New Ability Harisen Recovery Will not become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Sketch Down 2 (Keyword): Master Across 1: Rembrandt Knowledge UP +2`},{t:`Evening`,l:`Temperance Rank 3`,c:`Option A, Any, B, Any, A New Ability Housekeeping Will not become closer`}]},
+{d:`June 4th`,m:6,day:4,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Lovers Spend Time`,c:`Invite to Shibuya Option A Will become closer soon Evening`},{t:`Evening`,l:`Temperance Spend Time`,c:`Will become closer soon`}]},
+{d:`June 5th`,m:6,day:5,type:`free`,tags:["palace", "social"],sa:["Save before: Chalk Dodge \u2014 -Sun Rank 4- Charm UP +3"],steps:[{t:`Daytime`,l:`Trophy`,c:`Obtained Museum of Vanity Repossessed Trophy! Completed the Museum Palace.`},{t:`Daytime`,l:`Info Desk`,c:`Do NOT interact with the Info Desk, Fancy Couch, or Donut Shop. These will normally give us 2 points in Knowledge/Guts, but we can get 3 points instead if we wait till later.`},{t:`Daytime`,l:`Clothes Shop`,c:`Located at Secondhand Clothes at Shopping District Sell any sooty armor you get here. We need to sell 100 of these for an award.`},{t:`Daytime`,l:`Trophy`,c:`Obtained Trash Into Treasure Trophy! Sold old clothing at Furugi no Neuchi.`},{t:`Daytime`,l:`Darts`,c:`Ryuji Baton Pass Rank Up! (Auto) Rank 2 Joker Baton Pass Rank Up! (Auto) Rank 2 Evening`},{t:`Evening`,l:`Request`,c:`Received An Elderly's Meaning of Life Talk to Sake Reporter at Shopping District Request ID'd!`},{t:`Evening`,l:`Juice`,c:`Charm UP +2`},{t:`Evening`,l:`Chalk Dodge`,c:`Save Abuse`},{t:`Evening`,l:`Sun Rank 4`,c:`Charm UP +3`}]},
+{d:`June 6th`,m:6,day:6,type:`free`,tags:["social"],sa:[],steps:[{t:`Afternoon`,l:`Chalk`,c:`Charm UP +3 After School`},{t:`After School`,l:`Request`,c:`Received Sadism Is Just a Sign of Love`},{t:`After School`,l:`Sports Shop`,c:`Located at Sports Store at Underground Mall Buy Imported Protein`},{t:`After School`,l:`Bookstore`,c:`Wise Men's Words Nightlife Hotspots`},{t:`After School`,l:`DVD Rental`,c:`Rent ICU`},{t:`After School`,l:`Councillor Rank 4`,c:`Option Any, A, C, Any, A, A, A Will become closer soon Evening`},{t:`Evening`,l:`Plant`,c:`Feed Bio Nutrients Kindness UP +3`},{t:`Evening`,l:`Strength Spend Time`,c:`NOTE! These have no effect on Strength Confidant, but does net you some good items.`}]},
+{d:`June 7th`,m:6,day:7,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option C (PS4) or D (Next`},{t:`After School`,l:`Death Rank 7`,c:`Option B, Any, A, C New Ability Discount Guts UP +2 Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Conference Across 1: Badge Across 2: Speak Knowledge UP +2`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`June 8th`,m:6,day:8,type:`free`,tags:["free"],sa:["Save before: Darts \u2014 You get to play darts with two Party Members. The first person you invite, and the second person is random. In order to "],steps:[{t:`Morning`,l:`Lesson`,c:`Option C Knowledge After School`},{t:`After School`,l:`Faith Rank 2`,c:`NOTE! Normally you will need a Faith Persona, but you can get away with not having one right now. Option A, A, Any, Any, Any, A New Ability Tumbling Will become closer Evening`},{t:`Evening`,l:`Darts`,c:`Save Abuse You get to play darts with two Party Members. The first person you invite, and the second person is random. In order to get the most benefits from playing darts, we need to use a specific strategy. This can be pretty tricky, but remember you can use the Cross/X button instead of motion controls. Here is the strategy. Game 1: Round 1: Ton`},{t:`Evening`,l:`Trophy`,c:`Obtained Dartslinger Trophy! Played a game of darts.`}]},
+{d:`June 9th`,m:6,day:9,type:`free`,tags:["social"],sa:["Save before: Billiards \u2014 This gives you a random stat. Aim for Knowledge. Knowledge UP +3 Lovers +1 Chariot +1 All will become closer -Trophy- Ob"],steps:[{t:`Afternoon`,l:`Hangout Spot`,c:`New Hangout Spot Sudobashi Evening`},{t:`Evening`,l:`Billiards`,c:`Save Abuse This gives you a random stat. Aim for Knowledge. Knowledge UP +3 Lovers +1 Chariot +1 All will become closer`},{t:`Evening`,l:`Trophy`,c:`Obtained A Hustler's Journey Trophy! Played a game of billiards.`}]},
+{d:`June 10th`,m:6,day:10,type:`free`,tags:["free"],sa:[],steps:[{t:`Afternoon`,l:`Justice Rank 1 (Auto)`,c:`Evening`},{t:`Evening`,l:`Sports Shop`,c:`Buy Expert Billiards Buy Jump Cue`},{t:`Evening`,l:`Temperance Rank 4`,c:`Option Any, A, C, Any Will become closer`}]},
+{d:`June 11th`,m:6,day:11,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Fool Rank 5 (Auto)`,c:`New Ability Super Stock`}]},
+{d:`June 12th`,m:6,day:12,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Juice`,c:`Proficiency UP +2`},{t:`Daytime`,l:`Lovers Rank 7`,c:`Option B, Any, Any, B, A New Hangout Spot Asakusa/Oshiage Will not become closer Evening`},{t:`Evening`,l:`Masked Man`,c:`Talk to Man with Sunglasses at Shopping District Trade Imported Protein for Decorative Whip`},{t:`Evening`,l:`Sun Rank 5`,c:`New Ability Manipulation Charm UP +3`}]},
+{d:`June 13th`,m:6,day:13,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 Evening`},{t:`Evening`,l:`Bath`,c:`Charm UP +3 Guts UP +2`},{t:`Evening`,l:`Trophy`,c:`Obtained Getting the Vapors Trophy! Couldn't take the heat in the bathhouse.`}]},
+{d:`June 14th`,m:6,day:14,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Bath`,c:`Charm UP +3 Guts UP +2`}]},
+{d:`June 15th`,m:6,day:15,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Expert Billiards Book Finished! Technical Rank Up! Rank 1 Afternoon`},{t:`Afternoon`,l:`Lesson`,c:`Option B Knowledge UP +2 Evening`},{t:`Evening`,l:`Temperance Rank 5`,c:`Option A, A, Any, Any, Any, C New Ability Free Time Will become closer`}]},
+{d:`June 16th`,m:6,day:16,type:`free`,tags:["social"],sa:["Save before: Billiards \u2014 Technical Rank Up! Rank 2 Guts UP +3 Lovers +1 Will not become closer Chariot +1 Will become closer"],steps:[{t:`Morning`,l:`Class`,c:`Read The Art of Charm Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Closet Down 2: Design Across 1 (Keyword): Wardrobe Knowledge UP +2`},{t:`Evening`,l:`Billiards`,c:`Save Abuse Technical Rank Up! Rank 2 Guts UP +3 Lovers +1 Will not become closer Chariot +1 Will become closer`}]},
+{d:`June 17th`,m:6,day:17,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Temperance Rank 6`,c:`Option B, A, Any, C New Ability Super Housekeeping Will not become closer`}]},
+{d:`June 18th`,m:6,day:18,type:`free`,tags:["social"],sa:["Save before: Craft \u2014 Proficiency UP +3 Proficiency UP +2"],steps:[{t:`After School`,l:`Request`,c:`Received Phantom Thieves VS Burglary Ring`},{t:`After School`,l:`Emperor Rank 1`,c:`Located at Underground Walkway New Ability Card Duplication NOTE! You can talk to Yusuke to ask him to create Skill Cards for you from now on. I forgot there was an Award for having him create 10 Skill Cards. Make sure to talk to him a bunch to get this Award. Evening`},{t:`Evening`,l:`Craft`,c:`Save Abuse Proficiency UP +3 Proficiency UP +2`}]},
+{d:`June 19th`,m:6,day:19,type:`free`,tags:["social"],sa:["Save before: Craft \u2014 Proficiency UP +3 Proficiency UP +2"],steps:[{t:`Evening`,l:`Craft`,c:`Save Abuse Proficiency UP +3 Proficiency UP +2`}]},
+{d:`June 20th`,m:6,day:20,type:`free`,tags:["social"],sa:["Save before: Lesson \u2014 for both crafting and chalk dodge. This one can be a pain to get. -Craft- Proficiency UP +3 Proficiency UP +2 -Magician "],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Lovers +2 Will become closer soon Charm UP +2 Evening Save Abuse for both crafting and chalk dodge. This one can be a pain to get.`},{t:`Evening`,l:`Craft`,c:`Proficiency UP +3 Proficiency UP +2`},{t:`Evening`,l:`Magician Rank 4`,c:`New Ability Kitty Talk`}]},
+{d:`June 21st`,m:6,day:21,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`Afternoon`,l:`Chalk`,c:`Charm UP +3 After School Infiltrate the Palace Metaverse`},{t:`After School`,l:`Money Needed`,c:`200,000 Yen NOTE! If you are struggling with the darts game, then you can grind an extra 100,000 Yen to buy Dart Set from the sports store.`},{t:`After School`,l:`Personas Needed`,c:`Priestess, Emperor, Justice, Faith`},{t:`After School`,l:`Trophy`,c:`Obtained It's Showtime Trophy! Performed a Showtime attack. Obtained Accident`},{t:`After School`,l:`Prone Trophy! Performed an execution during a Fusion Alarm.`,c:`Awards- Obtained A Thief at Heart Award! Obtained a total of 150 items from search objects in the Palaces.`},{t:`Evening`,l:`Study`,c:`Knowledge UP +3 Knowledge UP +2`}]},
+{d:`June 22nd`,m:6,day:22,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Rafflesia`,c:`Located at Flower Shop at Underground Mall Work at Rafflesia Kindness UP +3 Kindness Rank Up! Considerate to Empathetic Evening`},{t:`Evening`,l:`Bookstore`,c:`Located at Bookstore at Red`},{t:`Evening`,l:`Nutrients`,c:`Located at Flower Shop at Red`},{t:`Evening`,l:`light District Buy 6 Mega Fertilizer`,c:`Crossword- Down 1: Wallet Down 2: Euro Across 1 (Keyword): Currency Across 2: ATM Knowledge UP +2`},{t:`Evening`,l:`Plant`,c:`Feed Mega Fertilizer Kindness UP +5`},{t:`Evening`,l:`Justice Rank 2`,c:`Located outside Darts/Billiards at Shopping District Persona needed from now on Option A, Any, A, Any, C, C New Ability Sleuthing Instinct Will become closer`}]},
+{d:`June 23rd`,m:6,day:23,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read The Craft of Cinema Book Finished! Morning`},{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 After School Send Calling Card Evening`},{t:`Evening`,l:`DVD`,c:`Watch ICU Kindness UP +5`}]},
+{d:`June 24th`,m:6,day:24,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Study`,c:`Knowledge UP +3 Knowledge UP +2`},{t:`Evening`,l:`Magician Rank 5 (Auto)`,c:`New Ability Pickpocket`},{t:`Evening`,l:`Fool Rank 6 (Auto)`,c:`New Ability High Arcana Burst`}]},
+{d:`June 25th`,m:6,day:25,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Class`,c:`Read The Art of Charm Book Finished! Charm UP +5 After School`},{t:`After School`,l:`Priestess Rank 1`,c:`Located at Classroom Building 3F at Shujin Academy Requires Knowledge Rank Scholarly New Ability Shadow Calculus Evening`},{t:`Evening`,l:`Temperance Spend Time`,c:`Will become closer`}]},
+{d:`June 26`,m:6,day:26,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Juice`,c:`Guts UP +2`},{t:`Daytime`,l:`Priestess Rank 2`,c:`Persona needed from now on Option A, B, Any, A Will become closer Evening`},{t:`Evening`,l:`Sun Rank 6`,c:``}]},
+{d:`June 27th`,m:6,day:27,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 After School`},{t:`After School`,l:`Councillor Rank 5`,c:`Option A, Any, C, B, B, A New Ability Mindfulness Will become closer Evening`},{t:`Evening`,l:`Devil Rank 1`,c:`Located at Crossroads at Red`},{t:`Evening`,l:`light District New Ability Rumor`,c:`filled Scoop Charm UP +3`}]},
+{d:`June 28th`,m:6,day:28,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Lovers Rank 8`,c:`Option B, A, Any, B, C New Ability Endure Will not become closer Evening`},{t:`Evening`,l:`Fortune Flag`,c:`Located at Red`}]},
+{d:`June 29th`,m:6,day:29,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Faith Rank 3`,c:`Option A, B, A, B, Any, Any, Any, A, Any Will become closer Evening`},{t:`Evening`,l:`Temperance Rank 7`,c:`Option C, C, Any Will become closer`}]},
+{d:`June 30th`,m:6,day:30,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Priestess Rank 3`,c:`Option A, B, A New Ability Black Belt Talk Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Iced Down 2 (Keyword): Front Across 1: Weather Across 2: Storm Knowledge UP +2`},{t:`Evening`,l:`Fortune Flag`,c:`~Monthly Progress~ Confidants Arcana # Confidant Arcana Status N/A Prison Master Fool Rank 6 1 Morgana Magician Rank 5 2 Makoto Niijima Priestess NEW! Rank 3 4 Yusuke Kitagawa Emperor NEW! Rank 1 5 Sojiro Sakura Hierophant Rank 4 6 Ann Takamaki Lovers Rank 8 7 Ryuji Sakamoto Chariot Rank 8 8 Goro Akechi Justice NEW! Rank 2 11 Twin Wardens Strength `}]},
+{d:`July 1st`,m:7,day:1,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read ABCs of Crafting Book Finished! Morning`},{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 After School`},{t:`After School`,l:`Library`,c:`Rent Speed Reader`},{t:`After School`,l:`School Store`,c:`Buy Yakisoba Pan`},{t:`After School`,l:`Secondhand Shop`,c:`Buy Retro Game Set`},{t:`After School`,l:`Lottery`,c:`Buy Summer Lotto R`},{t:`After School`,l:`Trader`,c:`Talk to Trader Sakai at Shopping District Trade Yakisoba Pan for Black Robe`},{t:`After School`,l:`Big Bang Challenge`,c:`Guts UP +3 Knowledge UP +3 Charm UP +3 Proficiency UP +3 Evening`},{t:`Evening`,l:`Temperance Rank 8`,c:`Option C, B, Any, Any, B, B, C Will become closer`}]},
+{d:`July 2nd`,m:7,day:2,type:`free`,tags:["free"],sa:[],steps:[{t:`Morning`,l:`Class`,c:`Read Speed Reader Book Finished! Lunchtime`},{t:`Morning`,l:`Temperance Flag (Auto)`,c:`Received A Teacher Maid to Suffer After School`},{t:`After School`,l:`Library`,c:`Rent The Illusory Popess`},{t:`After School`,l:`Priestess Rank 4`,c:`Option A, Any, Any, A, C New Ability Follow Up Will become closer Evening`},{t:`Evening`,l:`Justice Rank 3`,c:`Requires Knowledge Rank Scholarly and Charm Rank Suave Option Any, A, Any, Any, Any, B Will not become closer`},{t:`Evening`,l:`Invite`,c:`Accept Invite New Hangout Spot Ichigaya`}]},
+{d:`July 3rd`,m:7,day:3,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Chariot Spend TIme`,c:`Option A, Any, B (Temperance +3, will become closer) Will become closer Evening`},{t:`Evening`,l:`Juice`,c:`Kindness UP +2`},{t:`Evening`,l:`Bookstore`,c:`Buy Ghost Encounters`},{t:`Evening`,l:`Sun Rank 7`,c:`New Hangout Spot Ginza Charm UP +3`}]},
+{d:`July 4th`,m:7,day:4,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read The Illusory Popess Book Finished! Kindness UP +5 Morning`},{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Library`,c:`Rent The Great Thief`},{t:`After School`,l:`Emperor Rank 2`,c:`Persona needed from now on Option B, A, A Will become closer Evening`},{t:`Evening`,l:`Fortune Flag`,c:`Received Ending the Boyfriend's Abuse`}]},
+{d:`July 5th`,m:7,day:5,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`After School`,l:`Request:The Bark and Bite of a Bully`,c:`Located at Aiyatsbus Area 2 Request Complete!`},{t:`After School`,l:`Request: An Elderly's Meaning of Life`,c:`Located at Aiyatsbus Area 3 Request Complete!`},{t:`After School`,l:`Request: If Cats Disappeared from the City`,c:`Located at Aiyatsbus Area 6 Request Complete!`},{t:`After School`,l:`Request: Sadism Is Just a Sign of Love`,c:`Located at Aiyatsbus Area 7 Request Complete!`},{t:`After School`,l:`Request: Ending the Boyfriend's Abuse`,c:`Located at Chemdah Area 3 Request Complete!`},{t:`After School`,l:`Request: Phantom Thieves VS Burglary Ring`,c:`Located at Chemdah Area 4 Request Complete!`},{t:`After School`,l:`Request: A Teacher Maid to Suffer`,c:`Located at Chemdah Area 7 Request Complete!`},{t:`After School`,l:`Money Needed`,c:`From here on, we don't need a specific amount of money. Just make sure to always have a nice stack of cash on hand just in case.`},{t:`After School`,l:`Persona Needed`,c:`Fortune NOTE! Need to be Lv 27 to fuse Fortune Persona.`},{t:`After School`,l:`Trophy`,c:`Obtained Talent Thief Trophy! Obtained a Skill Accessory from a Palace ruler. Obtained Jose's Favorite Customer Trophy! Traded in flowers while in Mementos. Obtained The Phantom Philatelist Trophy! Traded in stamps while in Mementos. Obtained The Deviated Cognition Trophy! Encountered a deviation in Mementos.`},{t:`Evening`,l:`DVD`,c:`Watch ICU DVD Finished! Kindness UP +5`}]},
+{d:`July 6th`,m:7,day:6,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Class`,c:`Read The Great Thief Book Finished! Knowledge UP +5 Knowledge Rank Up! Scholarly to Encyclopedic After School`},{t:`After School`,l:`Chariot Rank 9`,c:`Option A, C, B, A, A New Ability Protect Will not become closer Evening`},{t:`Evening`,l:`Temperance Rank 9`,c:`Option A, A, A (Platonic) or B (Intimate), A (Platonic) or B (Intimate), A (Platonic) or B (Intimate), B (Phone) (Platonic only) Will become closer NOTE! If you don't romance multiple girls, you will receive valentines chocolate from every girl instead of just one girl and Sojiro. These chocolates carry over into New Game Plus, but are only items t`}]},
+{d:`July 7th`,m:7,day:7,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B, A Lovers +2 Will become closer Charm +2 After School`},{t:`After School`,l:`DVD Rental`,c:`Rent The Running Dead`},{t:`After School`,l:`Faith Rank 4`,c:`Option B, A, Any, A, Any, A, Any, A, B, A New Ability Chaines Hook Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Opium Down 2: Smuggle Across 1 (Keyword): Narcotics Knowledge UP +2`},{t:`Evening`,l:`Fortune Rank 1`,c:`New Ability Luck Reading`}]},
+{d:`July 8th`,m:7,day:8,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Ghost Encounters Book Finished! Guts UP +5 After School`},{t:`After School`,l:`Triple Seven`,c:`Buy Soothing Soba`},{t:`After School`,l:`Lovers Rank 9`,c:`Option Any, Any, B, A (Intimate) or B (Platonic), Any (Intimate only), B (Intimate only) New Ability Protect Will become closer NOTE! Some platonic routes will need more points to rank up than intimate routes. I will make note of this later.`},{t:`After School`,l:`Trophy`,c:`Obtained My Closest Partner Trophy! Entered a special relationship. Evening`},{t:`Evening`,l:`Luck Reading`,c:`Talk to Chihaya at Red`},{t:`Evening`,l:`light District Boost Kindness`,c:`Plant- Feed Mega Fertilizer Kindness UP +7`},{t:`Evening`,l:`Temperance Rank 10`,c:`Persona no longer needed New Ability Special Massage New Fusion Ardha`},{t:`Evening`,l:`Trophy`,c:`Obtained True Confidence Trophy! Maxed out one of your Confidants.`}]},
+{d:`July 9th`,m:7,day:9,type:`free`,tags:["palace", "social"],sa:[],steps:[{t:`Morning`,l:`Trophy`,c:`Obtained Bank of Gluttony Cleaned Out Trophy! Completed the Bank Palace.`},{t:`Morning`,l:`Lesson`,c:`Option D Knowledge UP +2 Evening`},{t:`Evening`,l:`Maid Service`,c:`From here on you can ask Kawakami to either brew coffee, make curry, wash laundry, or craft tools for free. Feel free to take advantage of this whenever.`},{t:`Evening`,l:`Star Rank 1`,c:`Located at Chapel at Kanda Requires Charm Rank Suave New Ability Koma Sabaki Knowledge UP +2`},{t:`Evening`,l:`Judgement Rank 1 (Auto)`,c:``}]},
+{d:`July 10th`,m:7,day:10,type:`free`,tags:["social"],sa:["Save before: Chalk Dodge \u2014 -DVD- Watch The Running Dead Guts UP +5 Guts Rank Up! Staunch to Dauntless"],steps:[{t:`Evening`,l:`Request`,c:`Received The Lovesick Cyberstalking Girl`},{t:`Evening`,l:`Chalk Dodge`,c:`Save Abuse`},{t:`Evening`,l:`DVD`,c:`Watch The Running Dead Guts UP +5 Guts Rank Up! Staunch to Dauntless`}]},
+{d:`July 11th`,m:7,day:11,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B, C, C Knowledge UP +2 Afternoon`},{t:`Afternoon`,l:`Chalk`,c:`Charm UP +3 Charm Rank Up! Suave to Charismatic Evening`},{t:`Evening`,l:`Trader`,c:`Trade Soothing Soba for Koedo Sword`},{t:`Evening`,l:`Moon Rank 3`,c:`Located at Red`}]},
+{d:`July 12th`,m:7,day:12,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option D Knowledge UP +2 After School`},{t:`After School`,l:`Request`,c:`Received One Who Bullies Bullies`},{t:`After School`,l:`Request: One Who Bullies Bullies`,c:`Talk to Sakoda at School Gate at Shujin Academy Request ID'd!`},{t:`After School`,l:`Emperor Rank 3`,c:`Option C, Any, B, B, A New Hangout Spot Ueno New Ability Follow Up Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Travel Across 1 (Keyword): Vacation Across 2: Summer Knowledge UP +2`},{t:`Evening`,l:`Fortune Rank 2`,c:`Persona needed from now on Option C, B, B, A Will become closer`}]},
+{d:`July 13th`,m:7,day:13,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`July 16th`,m:7,day:16,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`July 17th`,m:7,day:17,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Juice`,c:`Knowledge UP +2`},{t:`Evening`,l:`Luck Reading`,c:`Boost Charm`},{t:`Evening`,l:`Sun Rank 8`,c:`New Ability Mind Control Charm UP +7`}]},
+{d:`July 18th`,m:7,day:18,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`DVD`,c:`Watch The Running Dead DVD Finished! Guts UP +5`}]},
+{d:`July 19th`,m:7,day:19,type:`free`,tags:["exam", "social"],sa:[],steps:[{t:`Daytime`,l:`Exam`,c:`Charm UP +5 After School`},{t:`After School`,l:`DVD Rental`,c:`Rent Jail Break`},{t:`After School`,l:`Priestess Rank 5`,c:`Option C, A, C Will become closer Evening`},{t:`Evening`,l:`Exam`,c:`Talk to Sojiro`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Finals Down 2: Notes Across 1: Cram Across 2: Stress Knowledge UP +2`},{t:`Evening`,l:`Fortune Rank 3`,c:`Option B, A, Any New Ability Money Reading`}]},
+{d:`July 20th`,m:7,day:20,type:`free`,tags:["social"],sa:["Save before: Craft \u2014 Proficiency UP +3 Proficiency UP +2 Proficiency Rank Up! Skilled to Masterful"],steps:[{t:`Evening`,l:`Craft`,c:`Save Abuse Proficiency UP +3 Proficiency UP +2 Proficiency Rank Up! Skilled to Masterful`}]},
+{d:`July 21st`,m:7,day:21,type:`free`,tags:["social"],sa:["Save before: Game \u2014 Play Star Forneus Guts UP +3"],steps:[{t:`Evening`,l:`Game`,c:`Save Abuse Play Star Forneus Guts UP +3`}]},
+{d:`July 22nd`,m:7,day:22,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`DVD`,c:`Watch Jail Break Proficiency UP +5`}]},
+{d:`July 23rd`,m:7,day:23,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`DVD`,c:`Watch Jail Break DVD Finished! Proficiency UP +5`}]},
+{d:`July 24th`,m:7,day:24,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Plant`,c:`Feed Mega Fertilizer Kindness UP +5 Go to sleep`},{t:`Evening`,l:`Judgement Rank 2 (Auto)`,c:``}]},
+{d:`July 25th`,m:7,day:25,type:`free`,tags:["social"],sa:["Save before: Craft \u2014 Proficiency UP +3 Proficiency UP +2"],steps:[{t:`Daytime`,l:`Magician Rank 6 (Auto)`,c:`New Ability Ace Tools Evening`},{t:`Evening`,l:`Craft`,c:`Save Abuse Proficiency UP +3 Proficiency UP +2`}]},
+{d:`July 26th`,m:7,day:26,type:`palace`,tags:["palace"],sa:["Save before: Airsoft Shop \u2014 Obtain MRE Ration from Military Vending Machine NOTE! You may have this already from the TV Shopping Network. -Trader- T"],steps:[{t:`Daytime`,l:`Money Reading`,c:`Boost Money Infiltrate the Palace Metaverse`},{t:`Daytime`,l:`Personas Needed`,c:`Hermit, Hanged, Devil, Star`},{t:`Daytime`,l:`Trophy`,c:`Obtained Success Built on Sacrifice Trophy! Performed a Gallows execution.`},{t:`Evening`,l:`Massage`,c:`Call Kawakami for Massage`},{t:`Evening`,l:`Airsoft Shop`,c:`Save Abuse Obtain MRE Ration from Military Vending Machine NOTE! You may have this already from the TV Shopping Network.`},{t:`Evening`,l:`Trader`,c:`Trade MRE Ration for Factorization Guide`},{t:`Evening`,l:`Fortune Spend Time`,c:`Will become closer`}]},
+{d:`July 27th`,m:7,day:27,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Crossword`,c:`Down 1: Boom Down 2: Sparkler Across 1 (Keyword): Fireworks Knowledge UP +2`},{t:`Evening`,l:`Star Rank 2`,c:`Persona needed from now on Option A, Any, C Knowledge UP +2 Will become closer`}]},
+{d:`July 28th`,m:7,day:28,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Bookstore`,c:`Game Secrets (Shinjuku) Aquarium`},{t:`Daytime`,l:`Day Fishpond Spotter`,c:`Emperor Rank 4- Option C, A, A New Ability Art Talk Will become closer Evening`},{t:`Evening`,l:`Fortune Rank 4`,c:`Option Any, C, Any, Any, Any, B Will become closer`},{t:`Evening`,l:`Invite`,c:`Accept Invite New Hangout Spot Shinagawa`}]},
+{d:`July 29th`,m:7,day:29,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Justice Invite`,c:`Option A, Any, A (Devil +3, will become closer), B Will become closer Evening`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`July 30th`,m:7,day:30,type:`free`,tags:["exam", "social"],sa:[],steps:[{t:`Daytime`,l:`Luck Reading`,c:`Boost Guts`},{t:`Daytime`,l:`Couch`,c:`Examine Fancy Couch at Shopping District Guts UP +3`},{t:`Daytime`,l:`Movie`,c:`Watch Like A Dragon (Shinjuku) Guts UP +10 Evening`},{t:`Evening`,l:`Donut Shop`,c:`Located at Donut Shop at Shopping District (close to Darts/Billiards) Option B, A Guts UP +3`},{t:`Evening`,l:`Fortune Rank 5`,c:`Option A, Any, Any New Ability Affinity Reading Will become closer`}]},
+{d:`July 31st`,m:7,day:31,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Affinity Reading`,c:`Boost Ryuji Chariot +2 Will become closer`},{t:`Daytime`,l:`Luck Reading`,c:`Boost Charm`},{t:`Daytime`,l:`Juice`,c:`Charm UP +3`},{t:`Daytime`,l:`Movie`,c:`Watch Love Possibly (Shibuya) Charm UP +10 Evening`},{t:`Evening`,l:`Sun Rank 9`,c:`~Monthly Progress~ Confidants Arcana # Confidant Arcana Name Status N/A Prison Master Fool Rank 6 1 Morgana Magician Rank 6 2 Makoto Niijima Priestess Rank 5 4 Yusuke Kitagawa Emperor Rank 4 5 Sojiro Sakura Hierophant Rank 4 6 Ann Takamaki Lovers Rank 9 7 Ryuji Sakamoto Chariot Rank 9 8 Goro Akechi Justice Rank 3 10 Fortune Teller Fortune NEW! Rank`}]},
+{d:`August 1st`,m:8,day:1,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`DVD Rental`,c:`Rent 31`},{t:`Daytime`,l:`Chariot Rank 10`,c:`Persona no longer needed New Ability Second Awakening Captain Kidd to Seiten Taisei New Fusion Chi You New Skill Evade Wind Evening`},{t:`Evening`,l:`Affinity Reading`,c:`NOTE! May need to do this if Lovers is on Platonic route. Boost Ann Lovers +2 Will not become closer`},{t:`Evening`,l:`Luck Reading`,c:`Boost Charm`},{t:`Evening`,l:`Devil Rank 2`,c:`Persona needed from now on Option C, Any, B Charm UP +4 Will become closer`}]},
+{d:`August 2nd`,m:8,day:2,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Request`,c:`Received We Aren't Just Your Slaves`},{t:`Daytime`,l:`Affinity Reading`,c:`NOTE! May need to do this if Lovers is on Platonic route. Other Confidants may need Affinity Readings for Platonic routes. These will not be noted in the rest of the walkthrough, so I highly suggest using these if following a Platonic route. Boost Ann Lovers +2 Will become closer`},{t:`Daytime`,l:`Lovers Rank 10`,c:`Persona no longer needed New Hangout Spot Seaside Park New Ability Second Awakening Carmen to Hecate New Fusion Ishtar New Skill Evade Ice Evening`},{t:`Evening`,l:`Justice Rank 4`,c:`Option Any, C, A, A, Any, B, B New Ability Sleuthing Mastery Will become closer`}]},
+{d:`August 3rd`,m:8,day:3,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Request`,c:`Received Who's Been Assaulting People?`},{t:`Daytime`,l:`Emperor Rank 5`,c:`Option C, A, C New Ability Card Creation Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Coconut Down 2: Vibes Down 3: Lei Across 1 (Keyword): Island Knowledge UP +2`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`August 4th`,m:8,day:4,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Request`,c:`Received Calling for Justice for Cats`},{t:`Daytime`,l:`Faith Rank 5`,c:`Option A, Any, B, Any, B, A, Any, C Will become closer NOTE! Don't need a Faith Persona for a long while. Evening`},{t:`Evening`,l:`Affinity Reading`,c:`Boost Sojiro Hierophant +2 Will become closer`},{t:`Evening`,l:`Luck Reading`,c:`Boost Charm`},{t:`Evening`,l:`Devil Rank 3`,c:`Option C, Any, Any, C New Ability Shocking Scoop Will become closer Charm UP +4`}]},
+{d:`August 5th`,m:8,day:5,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Death Flag`,c:`Requires Charm Rank Charismatic Option Any, C, Any, Any, Any Received Bad Medicine Evening`},{t:`Evening`,l:`Hanged Man Rank 1`,c:`Located at Untouchable at Shibuya Requires Guts Rank Dauntless New Ability Starter Customization`}]},
+{d:`August 6th`,m:8,day:6,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Emperor Rank 6`,c:`Requires Proficiency Rank Masterful Option A, Any, Any, C, A New Ability Harisen Recovery Will become closer Evening`},{t:`Evening`,l:`Hanged Man Rank 2`,c:`Persona needed from now on Option Any, Any, C Proficiency UP +3 Will become closer`}]},
+{d:`August 7th`,m:8,day:7,type:`free`,tags:["social"],sa:["Save before: Request: Calling for Justice for Cats \u2014 Work at Triple Seven Charm +7 Charm Rank MAX! Charismatic to Debonair Request ID'd Evening -Trader- Trade Exorcism Water"],steps:[{t:`Daytime`,l:`Juice`,c:`Proficiency UP +2`},{t:`Daytime`,l:`Church`,c:`Buy Exorcism Water`},{t:`Daytime`,l:`Luck Reading`,c:`Boost Charm`},{t:`Daytime`,l:`Request: Calling for Justice for Cats`,c:`Save Abuse Work at Triple Seven Charm +7 Charm Rank MAX! Charismatic to Debonair Request ID'd Evening`},{t:`Evening`,l:`Trader`,c:`Trade Exorcism Water for Model Gun`},{t:`Evening`,l:`Sun Rank 10`,c:`New Ability Charismatic Speech New Fusion Asura Charm UP +7`}]},
+{d:`August 8th`,m:8,day:8,type:`free`,tags:["social"],sa:["Save before: Rafflesia \u2014 Kindness UP +7 Evening -Crossword- Down 1 (Keyword): Courage Down 2: Lion Across 1: Social Across 2: Moral Knowledge UP "],steps:[{t:`Daytime`,l:`Luck Reading`,c:`Boost Kindness`},{t:`Daytime`,l:`Rafflesia`,c:`Save Abuse Kindness UP +7 Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Courage Down 2: Lion Across 1: Social Across 2: Moral Knowledge UP +2`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`August 9th`,m:8,day:9,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Emperor Rank 7`,c:`Option Any, B ("What do you mean?"), A, A New Ability Live Painting Will become closer Evening`},{t:`Evening`,l:`Luck Reading`,c:`Boost Kindness`},{t:`Evening`,l:`Plant`,c:`Feed Mega Fertilizer Kindness UP +7 Kindness Rank Up! Empathetic to Selfless`},{t:`Evening`,l:`Devil Rank 4`,c:`Option Any, A, Any, A Charm UP +3 Will not become closer`}]},
+{d:`August 10th`,m:8,day:10,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Luck Reading`,c:`Boost Kindness`},{t:`Daytime`,l:`Movie`,c:`Watch Le Miserable (Shibuya) Kindness UP +10 Evening`},{t:`Evening`,l:`Moon Rank 4`,c:``}]},
+{d:`August 11th`,m:8,day:11,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Request`,c:`Received Part`},{t:`Daytime`,l:`Time Job, Full`,c:`Time Hell`},{t:`Daytime`,l:`Priestess Rank 6`,c:`Require Charm Rank Debonair Option C, Any, Any, A New Ability Harisen Recovery Will become closer Evening`},{t:`Evening`,l:`Fortune Rank 6`,c:`Option Any, Any, Any, C, B Will not become closer`}]},
+{d:`August 12th`,m:8,day:12,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Emperor Rank 8`,c:`Option C, C New Ability Endure Will become closer Evening`},{t:`Evening`,l:`Affinity Reading`,c:`Boost Ohya Devil +2 Will become closer`},{t:`Evening`,l:`Devil Rank 5`,c:`Option Any, Any, Any, B, A New Ability Unprecedented Scoop Will not become closer`}]},
+{d:`August 13th`,m:8,day:13,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Luck Reading`,c:`Boost Guts`},{t:`Daytime`,l:`Big Bang Challenge`,c:`Guts UP +7 Knowledge UP +5 Charm UP +5 Proficiency UP +5`},{t:`Evening`,l:`Justice Rank 5`,c:`Option Any, A, A, Any, A Will become closer`}]},
+{d:`August 14th`,m:8,day:14,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Juice`,c:`Guts +2`},{t:`Daytime`,l:`Affinity Reading`,c:`Boost Chihaya Fortune +2 Will become closer`},{t:`Daytime`,l:`Luck Reading`,c:`Boost Kindness`},{t:`Daytime`,l:`Request: Who's Been Assaulting People?`,c:`Work at Rafflesia Kindness UP +4 Request ID'd! Evening`},{t:`Evening`,l:`Crossroads`,c:`Talk to Lala Escargot Work at Crossroads Kindness UP +4`}]},
+{d:`August 15th`,m:8,day:15,type:`free`,tags:["social"],sa:["Save before: Billiards \u2014 Technical Rank Up! Rank 3 Guts UP +4 Priestess +1 Emperor +1 Lovers +1 Chariot +1 All will become closer Obtained Billia"],steps:[{t:`Daytime`,l:`Luck Reading`,c:`Boost Guts`},{t:`Daytime`,l:`Billiards`,c:`Save Abuse Technical Rank Up! Rank 3 Guts UP +4 Priestess +1 Emperor +1 Lovers +1 Chariot +1 All will become closer Obtained Billiards Magician Evening`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`August 16th`,m:8,day:16,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Priestess Rank 7`,c:`Option Any, Any, Any, C, B, B, A, A New Ability Shadow Factorization Will become closer Evening`},{t:`Evening`,l:`Star Rank 3`,c:`Option A, B, A New Ability Uchikomi Knowledge UP +2 Will become closer`}]},
+{d:`August 17th`,m:8,day:17,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Emperor Rank 9`,c:`Option A, A New Ability Protect Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Lotion Down 2: Ouch Down 3: SPF Across 1 (Keyword): Sunburn Across 2: Hot Knowledge UP +2`},{t:`Evening`,l:`Moon Rank 5`,c:`New Ability Mishima's Desperation`}]},
+{d:`August 18th`,m:8,day:18,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Priestess Rank 8`,c:`Option A, A New Ability Endure Will become closer Evening`},{t:`Evening`,l:`Affinity Reading`,c:`Boost Ohya Devil +2 Will become closer`},{t:`Evening`,l:`Devil Rank 6`,c:`Option Any, A, B, A, C Will become closer`}]},
+{d:`August 19th`,m:8,day:19,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Emperor Rank 10`,c:`Persona no longer needed New Ability Second Awakening Goemon to Kamu Susano`},{t:`Daytime`,l:`o New Fusion Odin New Skill Evade Fire Evening`,c:`Devil Rank 7- Option Any, B, B, A New Ability Outrageous Scoop Charm UP +5 Will become closer`}]},
+{d:`August 20th`,m:8,day:20,type:`free`,tags:["social"],sa:["Save before: Darts \u2014 Get two Party Members at Baton Pass Rank MAX and Proficiency Rank MAX Makoto Baton Pass Rank Up! Rank MAX Ann Baton Pass"],steps:[{t:`Daytime`,l:`Bakery`,c:`Buy Melon Pan at Bakery at Ginza Line Gate`},{t:`Daytime`,l:`Darts`,c:`Save Abuse Get two Party Members at Baton Pass Rank MAX and Proficiency Rank MAX Makoto Baton Pass Rank Up! Rank MAX Ann Baton Pass Rank Up! Rank MAX Proficiency UP +3 Proficiency Rank MAX! Masterful to Transcendent Proficiency UP +2 (Optional) Magician +1 Priestess +1 Emperor +1 Lovers +1 All will become closer Round 4 Responses: Ryuji: Option A M`},{t:`Evening`,l:`Hanged Man Rank 3`,c:`Option Any, A, C, Any New Ability Camo Customization Proficiency UP +3 Will become closer`}]},
+{d:`August 21st`,m:8,day:21,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Read`,c:`Read Billiards Magician Book Finished!`}]},
+{d:`August 22nd`,m:8,day:22,type:`free`,tags:["palace"],sa:[],steps:[{t:`Daytime`,l:`Trophy`,c:`Obtained Pyramid of Wrath Plundered Trophy! Completed the Pyramid Palace.`},{t:`Daytime`,l:`Judgement Rank 3 (Auto)`,c:`Evening`},{t:`Evening`,l:`Trader`,c:`Trade Melon Pan for Old Man's Fist`},{t:`Evening`,l:`Lottery`,c:`Check lottery result`},{t:`Evening`,l:`Devil Flag`,c:`Option B, Any Received Fighting for Truth in Journalism`},{t:`Evening`,l:`Fool Rank 7 (Auto)`,c:``}]},
+{d:`August 23rd`,m:8,day:23,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Hanged Man Rank 4`,c:`Option Any, Any, Any, C, A Proficiency UP +3 Will not become closer`}]},
+{d:`August 24th`,m:8,day:24,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Affinity Reading`,c:`Boost Iwai Hanged Man +2 Will become closer`},{t:`Evening`,l:`Star Rank 4`,c:`Option C, B, A New Hangout Spot Jinbocho Will become closer`}]},
+{d:`August 25th`,m:8,day:25,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Luck Reading`,c:`Boost Kindness`},{t:`Evening`,l:`Plant`,c:`Feed Mega Fertilizer Kindness UP +7`},{t:`Evening`,l:`Crossword`,c:`Down 1: Ice Down 2: Fan Down 3: Shade Across 1 (Keyword): Sweltering Across 2: AC Knowledge UP +2`},{t:`Evening`,l:`Fortune Rank 7`,c:`Option C, A New Ability Special Fate Reading Will become closer`}]},
+{d:`August 26th`,m:8,day:26,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Request: We Aren't Just Your Slaves`,c:`Work at Crossroads Kindness UP +3 Request ID'd!`}]},
+{d:`August 27th`,m:8,day:27,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Star Rank 5`,c:`Option B, B, B New Ability Kakoi Kuzushi Knowledge UP +2 Will become closer`}]},
+{d:`August 28th`,m:8,day:28,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Luck Reading`,c:`Boost Kindness`},{t:`Evening`,l:`Juice`,c:`Kindness UP +3`},{t:`Evening`,l:`Hanged Man Rank 5`,c:`Option Any, B, C, A New Ability Discount Proficiency UP +3 Will not become closer`}]},
+{d:`August 29th`,m:8,day:29,type:`free`,tags:["social"],sa:["Save before: Billiards \u2014 Technical Rank MAX! Guts UP +4 Priestess +1 Emperor +1 Lovers +1 Chariot +1 All will become closer -Magician Rank 7 (Aut"],steps:[{t:`Evening`,l:`Request`,c:`Received Who's Muscling in Yongen`},{t:`Evening`,l:`Jaya?`,c:`Affinity Reading- Boost Iwai Hanged Man +2 Will become closer`},{t:`Evening`,l:`Luck Reading`,c:`Boost Guts`},{t:`Evening`,l:`Billiards`,c:`Save Abuse Technical Rank MAX! Guts UP +4 Priestess +1 Emperor +1 Lovers +1 Chariot +1 All will become closer`},{t:`Evening`,l:`Magician Rank 7 (Auto)`,c:`New Ability Harisen Recovery`}]},
+{d:`August 30th`,m:8,day:30,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Hacking Down 2: Sin Across 1: Breach Across 2: Virus Knowledge UP +2`},{t:`Evening`,l:`Moon Rank 6`,c:``}]},
+{d:`August 31st`,m:8,day:31,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Hermit Rank 1 (Auto)`,c:`New Ability Moral Support`},{t:`Evening`,l:`DVD`,c:`Watch 31 Guts UP +5 Guts Rank MAX! Dauntless to Lionhearted`},{t:`Evening`,l:`Fool Rank 8 (Auto)`,c:`New Ability Ultra Stock ~Monthly Progress~ Confidants Arcana # Confidant Arcana Name Status N/A Prison Master Fool Rank 8 1 Morgana Magician Rank 7 2 Makoto Niijima Priestess Rank 8 4 Yusuke Kitagawa Emperor Complete! Rank MAX 5 Sojiro Sakura Hierophant Rank 4 6 Ann Takamaki Lovers Complete! Rank MAX 7 Ryuji Sakamoto Chariot Complete! Rank MAX 8 Go`},{t:`Evening`,l:`Jaya? C ID'd The Lovesick Cyberstalking Girl C ID'd Part`,c:`Time Job, Full`}]},
+{d:`September 1st`,m:9,day:1,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Fortune Flag`,c:`Any options Received Debunking the Psychic!`}]},
+{d:`September 2nd`,m:9,day:2,type:`free`,tags:["social"],sa:[],steps:[{t:`Afternoon`,l:`Chalk`,c:`Charm UP +3 (Optional) After School`},{t:`After School`,l:`Bookstore`,c:`Tokyo Shrines Night Skies Musty Pages Master Swordsman (Jinbocho)`},{t:`Night`,l:`Discount Store`,c:`Located at Discount Store at Central Street Phantom Wafers Thief Mask Calling Postcard`},{t:`Night`,l:`Secondhand Shop`,c:`Broken Laptop Gambla Goemon`},{t:`Night`,l:`Parts Shop`,c:`Located at Machine Parts Shop at Electric Town PC Tool Set`},{t:`Night`,l:`Games`,c:`Located at Retro Game Shop at Electric Town Punch Ouch Train of Life Power Intuition Golfer Sarutahiko Featherman Seeker`},{t:`Night`,l:`Crane Game`,c:`Located at Crane Game at Arcade (Akihabara) Give it a try Obtained Jack Frost Doll`},{t:`Night`,l:`Trophy`,c:`Obtained Going Against the Crane Trophy! Scored a prize in the crane game.`},{t:`Night`,l:`Strength Spend Time`,c:`Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Advisory Down 2: Gap Across 1: Gust Across 2 (Keyword): Typhoon Knowledge UP +2`},{t:`Evening`,l:`Laptop`,c:`Fix Laptop at Work Desk Proficiency UP +5`}]},
+{d:`September 3rd`,m:9,day:3,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 Evening`},{t:`Evening`,l:`Laptop`,c:`We can now shop at Shady Commodities at anytime.`},{t:`Evening`,l:`Justice Rank 6`,c:`Option C, B, A, A, B, A, C Will become closer`}]},
+{d:`September 4th`,m:9,day:4,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`Daytime`,l:`Request`,c:`Received Winners Don't Use Cheats`},{t:`Daytime`,l:`Request: Winners Don't Use Cheats`,c:`Talk to Angry Gamer at Arcade (Shibuya)`},{t:`Daytime`,l:`Luck Reading`,c:`Boost Knowledge`},{t:`Daytime`,l:`Juice`,c:`Knowledge UP +3`},{t:`Daytime`,l:`Hermit Rank 2`,c:`Located outside Cafe Leblanc at Backstreets Requires Kindness Rank Selfless Persona needed from now on Option B, A, A, A New Ability Mementos Scan Will become closer Evening`},{t:`Evening`,l:`Trader`,c:`Trade Phantom Wafers for 2 Strength Up Ofuda`},{t:`Evening`,l:`Hanged Man Rank 6`,c:`Option Any, Any, B, C, A Will not become closer`}]},
+{d:`September 5th`,m:9,day:5,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Hermit Rank 3`,c:`Option C, A, C Will become closer Evening`},{t:`Evening`,l:`Luck Reading`,c:`Boost Kindness`},{t:`Evening`,l:`Hierophant Rank 5`,c:`Option C, B, A, B Kindness UP +4 Will become closer`}]},
+{d:`September 6th`,m:9,day:6,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Money Reading`,c:`Boost Money`},{t:`After School`,l:`Trophy`,c:`Obtained Professional Modification Trophy! Customized a gun. Head into Mementos Metaverse`},{t:`After School`,l:`Request: One Who Bullies Bullies`,c:`Located at Aiyatsbus Area 5 Request Complete!`},{t:`After School`,l:`Request: Part`,c:`Time Job, Full`},{t:`After School`,l:`Time Hell`,c:`Located at Chemdah Area 1 Obtained Chinese Sweets Request Compete!`},{t:`After School`,l:`Request: Bad Medicine`,c:`Located at Chemdah Area 2 Request Complete!`},{t:`After School`,l:`Request: The Lovesick Cyberstalking Girl`,c:`Located at Chemdah Area 8 Request Complete!`},{t:`After School`,l:`Request: Calling for Justice for Cats`,c:`Located at Kaitul Area 1 Request Complete!`},{t:`After School`,l:`Request: Debunking the Psychic!`,c:`Located at Kaitul Area 3 Request Complete!`},{t:`After School`,l:`Request: Who's Been Assaulting People?`,c:`Located at Kaitul Area 5 Request Complete!`},{t:`After School`,l:`Request: We Aren't Just Your Slaves`,c:`Located at Kaitul Area 8 Obtained Theme Park Escort Request Complete!`},{t:`After School`,l:`Request: Fighting for Truth in Journalism`,c:`Located at Kaitul Area 9 Request Complete!`},{t:`After School`,l:`Request: Who's Muscling in Yongen`,c:`Jaya?- Located at Kaitul Area 10 Obtained Shitamachi Reborn Request Complete!`},{t:`After School`,l:`Request: Winners Don't Use Cheats`,c:`Located at Akzeriyyuth Area 5`},{t:`After School`,l:`Money`,c:`Would recommend having around 500,000 yen on hand before you leave. Things are gonna start getting expensive.`}]},
+{d:`September 10th`,m:9,day:10,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Date Invite`,c:`Makoto (Platonic), Ann, Kawakami, Hifumi (Platonic), Ryuji (`}]},
+{d:`September 12th`,m:9,day:12,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Plant`,c:`Feed Mega Fertilizer Kindness UP +5 Go to sleep`}]},
+{d:`September 13th`,m:9,day:13,type:`free`,tags:["free"],sa:[],steps:[{t:`Early Morning`,l:`Judgement Rank 4 (Auto)`,c:``}]},
+{d:`September 14th`,m:9,day:14,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option A Knowledge UP +2 Evening Go to sleep`}]},
+{d:`September 15th`,m:9,day:15,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`September 16th`,m:9,day:16,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`September 17th`,m:9,day:17,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 Evening`},{t:`Evening`,l:`Magician Rank 8 (Auto)`,c:`New Ability Endure Go to sleep`}]},
+{d:`September 18th`,m:9,day:18,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Read`,c:`Read Social Thought Book Finished! Knowledge UP +7`}]},
+{d:`September 19th`,m:9,day:19,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`Daytime`,l:`Money Reading`,c:`Boost Money`},{t:`Daytime`,l:`Luck Reading`,c:`Boost Knowledge`},{t:`Daytime`,l:`Info Desk`,c:`Talk to Information Desk at Shopping District Ask all questions Knowledge UP +3 Knowledge Rank MAX! Encyclopedic to Erudite`},{t:`Daytime`,l:`Jaya. Infiltrate the Palace Metaverse`,c:`Personas Needed- Empress, Tower`},{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Crossword`,c:`Down 1: Games Down 2: Fun Down 3: Shrines Across 1 (Keyword): Festival Knowledge UP +3`},{t:`Evening`,l:`Trader`,c:`Trade Thief Mask for 2 Magic Up Ofuda`},{t:`Evening`,l:`Star Rank 6`,c:`Option B, C, B Knowledge UP +3 Will not become closer`}]},
+{d:`September 20th`,m:9,day:20,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Affinity Reading`,c:`Boost Hifumi Star +2 Will become closer Send Calling Card Evening`},{t:`Evening`,l:`Read`,c:`Read Master Swordsman`}]},
+{d:`September 21st`,m:9,day:21,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`Afternoon`,l:`Lesson`,c:`Option B Knowledge UP +2 Metaverse`},{t:`Evening`,l:`Magician Rank 9 (Auto)`,c:`New Ability Protect`},{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Moon Flag`,c:``}]},
+{d:`September 22nd`,m:9,day:22,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Reading Luck`,c:`Boost Kindness`},{t:`Daytime`,l:`Tower Flag`,c:`Enter Arcade at Electric Town`},{t:`Daytime`,l:`Crane Game`,c:`Give it a whirl Obtained Burger`},{t:`Daytime`,l:`kun Doll`,c:`Tower Flag- Talk to Futaba outside Cafe Leblanc`},{t:`Daytime`,l:`Tower Rank 1`,c:`Talk to Shinya at Arcade (Akihabara) New Ability Down Shot Kindness UP +7 Kindness Rank MAX! Selfless to Angelic`},{t:`Daytime`,l:`Trophy`,c:`Obtained Pure Perfection Trophy! Maxed out all social stats. Evening`},{t:`Evening`,l:`Heirophant Rank 6`,c:`Option C, C, A, C New Ability Coffee Mastery Kindness UP +7 Will become closer`}]},
+{d:`September 23rd`,m:9,day:23,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Class`,c:`Read Master Swordsman Book Finished Guts UP +7 After School`},{t:`After School`,l:`Bookstore`,c:`Call Me Chief (Jinbocho) Reckless Casanova Heroic Revelations The Art of Automata`},{t:`After School`,l:`Councillor Rank 6`,c:`Option B, A, Any, C, Any, Any, A Will become closer Evening`},{t:`Evening`,l:`Devil Rank 8`,c:`Option Any, Any, Any, C, A Charm UP +5 Will become closer`}]},
+{d:`September 24th`,m:9,day:24,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Medjed Menace Book Finished! Knowledge UP +7 Afternoon`},{t:`Afternoon`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Hermit Rank 4`,c:`Option B, Any, C, C New Ability Position Hack Will become closer Evening`},{t:`Evening`,l:`Affinity Reading`,c:`Boost Iwai Hanged Man +2 Will become closer`},{t:`Evening`,l:`Hanged Man Rank 7`,c:`Option B, B, Any, A New Ability Expert Customization Will become closer`}]},
+{d:`September 25th`,m:9,day:25,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Priestess Rank 9`,c:`Option B ("Your fight's with me."), A, B, A, A (Platonic) or B (Intimate), A (Intimate) or B (Platonic), A (Phone) (Both routes) New Ability Protect Will become closer Evening`},{t:`Evening`,l:`Read`,c:`Read Wise Men's Words Book Finished! Knowledge UP +7`}]},
+{d:`September 26th`,m:9,day:26,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Tower Rank 2`,c:`Persona needed from now on Option B, B, B, C, A New Ability Bullet Hail Kindness UP +5 Will become closer Evening`},{t:`Evening`,l:`Star Rank 7`,c:`Option C, B New Ability Narikin Knowledge UP +2 Will become closer`}]},
+{d:`September 27th`,m:9,day:27,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Death Rank 8`,c:`Option Any, B, A, A Guts UP +2 Will become closer Evening`},{t:`Evening`,l:`Fortune Rank 8`,c:`Option B, C, B, B New Ability Celestial Reading Will become closer`}]},
+{d:`September 28th`,m:9,day:28,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Tidying the Heart Book Finished! Proficiency UP +7 Afternoon`},{t:`Afternoon`,l:`Lesson`,c:`Option C, B, C Knowledge UP +2 After School`},{t:`After School`,l:`Hermit Rank 5`,c:`Option Any, A, C, A Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Academic Across 1 (Keyword): Ranking Across 2: Senior`},{t:`Evening`,l:`Star Flag`,c:`Requires Knowledge Rank Erudite Option Any, A, Any, Any Received Upstaging the Stage Mother`}]},
+{d:`September 29th`,m:9,day:29,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Tower Rank 3`,c:`Option Any, Any, Any, A ("That's the spirit."), A New Ability Warning Shot Kindness UP +3 Will become closer Evening`},{t:`Evening`,l:`Fortune Rank 9`,c:`Option Any, B, A (Platonic) or B (Intimate), A Will become closer`}]},
+{d:`September 30th`,m:9,day:30,type:`free`,tags:["free"],sa:[],steps:[{t:`Morning`,l:`Class`,c:`Read Heroic Revelations After School`},{t:`After School`,l:`Councillor Rank 7`,c:`Option C, B, A, C New Ability Flow Boost Will become closer Evening`},{t:`Evening`,l:`Devil Rank 9`,c:`Option Any, B, A, Any, A (Intimate) or B (Platonic), A (Intimate) or B (Platonic), A (Phone) (Intimate only) Will not become closer ~Monthly Progress~ Confidants Arcana # Confidant Arcana Name Status N/A Prison Master Fool Rank 8 1 Morgana Magician Rank 9 2 Makoto Niijima Priestess Rank 9 4 Yusuke Kitagawa Emperor Rank MAX 5 Sojiro Sakura Hierophan`},{t:`Evening`,l:`Time Job, Full`,c:`Time Hell C Complete! We Aren't Just Your Slaves C Complete! Who's Been Assaulting People? C Complete! Calling for Justice for Cats C Complete! Ending the Boyfriend's Abuse C Finished Debunking the Psychic! C Complete! Bad Medicine C Complete! A Teacher Maid to Suffer C Finished Fighting for Truth in Journalism C Complete! Winners Don't Use Cheats `},{t:`Night`,l:`Jaya Complete! Exemplary Teamwork Battle Performed an All`,c:`Out Attack 50 times Finished The Shadow Diplomat Battle Initiated negotiations with Shadows a total of 100 times. Complete! Crack Shot Battle Defeated a total of 100 enemies using a gun Finished Master Technician Battle Triggered a Technical hit 100 times Finished Professional Killer Phantom Successfully entered battle 30 times using Chaines Hook C`}]},
+{d:`October 1st`,m:10,day:1,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Affinity Reading`,c:`Boost Ohya Devil +2 Will not become closer`},{t:`After School`,l:`Tower Rank 4`,c:`Option C, B Kindness UP +3 Will become closer Evening`},{t:`Evening`,l:`Hanged Man Flag`,c:`Requires Guts Rank Lionhearted Option B, A, Any Received Shady Deal in the Shadows`}]},
+{d:`October 2nd`,m:10,day:2,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Affinity Reading`,c:`Boost Ohya Devil +2 Will become closer NOTE! May need more affinity readings if on Platonic route.`},{t:`Daytime`,l:`Priestess Rank 10`,c:`Persona no longer needed New Ability Second Awakening Johanna to Anat New Fusion Cybele New Skill Evade Psy Evening`},{t:`Evening`,l:`Trader`,c:`Trade Calling Card for 2 Strawberry Daifuku`},{t:`Evening`,l:`Read`,c:`Read Heroic Revelations Book Finished! Knowledge UP +7`}]},
+{d:`October 3rd`,m:10,day:3,type:`free`,tags:["social"],sa:[],steps:[{t:`Afternoon`,l:`Lesson`,c:`Option B Knowledge UP +2 Evening Go to sleep`}]},
+{d:`October 4th`,m:10,day:4,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Death Rank 9`,c:`Option C, Any, A (Intimate) or B (Platonic), A (Intimate) or B (Platonic), A (Intimate) or B (Platonic), B (Intimate route) or C (Platonic route) (Phone) Will become closer Evening`},{t:`Evening`,l:`Hierophant Rank 7`,c:`Requires Kindness Rank Angelic Option A, Any, Any, C Kindness UP +5 Will become closer`}]},
+{d:`October 5th`,m:10,day:5,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Class`,c:`Read Call Me Chief After School`},{t:`After School`,l:`Hermit Rank 6`,c:`Option B, A, Any, A New Ability Active Support Will become closer Evening`},{t:`Evening`,l:`Read`,c:`Read Call Me Chief Book Finished! Kindness UP +7`}]},
+{d:`October 6th`,m:10,day:6,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read The Art of Automata Morning`},{t:`Morning`,l:`Lesson`,c:`Option D Knowledge UP +2 After School`},{t:`After School`,l:`Tower Rank 5`,c:`Option A, B, B, A New Ability Laced Bullets Kindness UP +3 Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Abyss Down 2: Widow Across 1 (Keyword): Black Across 2: Shadow Knowledge UP +2`},{t:`Evening`,l:`Hierophant Rank 8`,c:`Option B, B Received The Money`}]},
+{d:`October 7th`,m:10,day:7,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Request: The Money`,c:`grubbing Uncle- Talk to Futaba outside Cafe Leblanc Request Complete! Evening`},{t:`Evening`,l:`Devil Rank 10`,c:`Persona no longer needed New Ability Legendary Scoop New Fusion Beelzebub`}]},
+{d:`October 8th`,m:10,day:8,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Tower Rank 6`,c:`Option Any, Any, B, B, A New Ability Cheap Shot Kindness UP +3 Will become closer Evening`},{t:`Evening`,l:`Moon Rank 7`,c:`New Ability Phanboy`}]},
+{d:`October 9th`,m:10,day:9,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Death Rank 10`,c:`NOTE! Platonic route only. Intimate route takes place during Evening. Persona no longer needed New Ability Resuscitation New Fusion Alice`},{t:`Evening`,l:`DVD`,c:`Watch 31 DVD Finished! Guts UP +5 Evening`},{t:`Evening`,l:`Death Rank 10`,c:`NOTE! Intimate route only. Persona no longer needed New Ability Resuscitation New Fusion Alice`},{t:`Evening`,l:`DVD`,c:`Watch 31 DVD Finished! Guts UP +5`}]},
+{d:`October 10th`,m:10,day:10,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Tower Rank 7`,c:`Any Options Will not become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Halloween Across 1: Treats Across 2: Witch Knowledge UP +2`},{t:`Evening`,l:`Affinity Reading`,c:`Boost Shinya Tower +2 Will become closer`},{t:`Evening`,l:`Hierophant Rank 9`,c:`Option A, B, B New Ability Curry Tips Will become closer`}]},
+{d:`October 11th`,m:10,day:11,type:`free`,tags:["palace", "social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 Evening`},{t:`Evening`,l:`Trophy`,c:`Obtained Spaceport of Greed Obliterated Trophy! Completed the Spaceport Palace Go to sleep`},{t:`Evening`,l:`Fool Rank 9 (Auto)`,c:``}]},
+{d:`October 12th`,m:10,day:12,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Judgement Rank 5 (Auto)`,c:`Evening`},{t:`Evening`,l:`Read`,c:`Read The Art of Automata Book Finished! Proficiency UP +7`}]},
+{d:`October 13th`,m:10,day:13,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Read`,c:`Read Reckless Casanova`}]},
+{d:`October 14th`,m:10,day:14,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Request`,c:`Received The Killer Who Cleans Up Trash`},{t:`After School`,l:`Library`,c:`Rent Cry of Cthulhu`},{t:`After School`,l:`Bookstore`,c:`Buy Nakano Walker`},{t:`After School`,l:`DVD Rental`,c:`Rent D. Housewives`},{t:`After School`,l:`Councillor Rank 8`,c:`Option B, A, A, C, A, A, Any, A Will become closer Evening`},{t:`Evening`,l:`Hierophant Rank 10`,c:`Persona no longer needed New Ability Curry Mastery New Fusion Kohryu`}]},
+{d:`October 15th`,m:10,day:15,type:`free`,tags:["social"],sa:[],steps:[{t:`Afternoon`,l:`Chalk`,c:`Charm UP +3 (Optional) After School`},{t:`After School`,l:`Crane Game`,c:`Give it a smack Obtained Wanna`},{t:`After School`,l:`kun Doll`,c:`Tower Rank 8- Option B, C, Any, A New Ability Electric Slug Kindness UP +5 Will become closer Evening`},{t:`Evening`,l:`Request`,c:`Received A Mother's Aggression`},{t:`Evening`,l:`Moon Rank 8`,c:``}]},
+{d:`October 16th`,m:10,day:16,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Request`,c:`Received Man of Many Faces and Debts`},{t:`Daytime`,l:`Capsule`,c:`Located at Capsule Machine at Electric Town Keep buying until you get two Gear Girimehkala Obtained 2 Gear Girimehkala Talk to Covetous Man next to Capsule Machine Trade 1 Girimehkala for Strawberry Curry and Mystery Stew NOTE! He has multiple trades.`},{t:`Daytime`,l:`Hermit Rank 7`,c:`Option B, A New Ability Treasure Reboot Received Daughter's Just a Meal Ticket Will become closer Evening`},{t:`Evening`,l:`Trader`,c:`Trade Gear Girimehkala for Hot`},{t:`Evening`,l:`Blooded Sword`,c:`Maid Cafe- Located at Maid Cafe at Electric Town Order Sincere Omelette and Forgive Mistake Kindness UP +2 Charm UP +3`}]},
+{d:`October 17th`,m:10,day:17,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`October 20th`,m:10,day:20,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Read`,c:`Read Reckless Casanova Book Finished! Charm UP +7`}]},
+{d:`October 21st`,m:10,day:21,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Read`,c:`Read Cry of Cthulhu Book Finished! Guts UP +7`}]},
+{d:`October 22nd`,m:10,day:22,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option A Knowledge UP +2 Evening`},{t:`Evening`,l:`Moon Rank 9`,c:``}]},
+{d:`October 23rd`,m:10,day:23,type:`free`,tags:["social"],sa:["Save before: Darts \u2014 Get two Party Members at Baton Pass Rank MAX Morgana Baton Pass Rank Up! Rank MAX Haru Baton Pass Rank UP! Rank MAX Prof"],steps:[{t:`Evening`,l:`Bookstore`,c:`Buy Knowing the Heart (Jinbocho)`},{t:`Evening`,l:`Darts`,c:`Save Abuse Get two Party Members at Baton Pass Rank MAX Morgana Baton Pass Rank Up! Rank MAX Haru Baton Pass Rank UP! Rank MAX Proficiency UP +3 Proficiency UP +2 (Optional) Magician +1 Empress +1 All will become closer Round 4 Responses: Ryuji: Option A Morgana: Option C Ann: Option C Yusuke: Option A Makoto: Option C Haru: Option C`}]},
+{d:`October 24th`,m:10,day:24,type:`free`,tags:["exam", "social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 Lunchtime`},{t:`Morning`,l:`Exam`,c:`Charm UP +5`},{t:`Morning`,l:`Trophy`,c:`Obtained A Most Studious Disguise Trophy! Scored the highest on your exams. Evening`},{t:`Evening`,l:`Exam`,c:`Talk to Sojiro`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`October 25th`,m:10,day:25,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Read`,c:`Read Knowing the Heart Book Finished!`}]},
+{d:`October 26th`,m:10,day:26,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Date Invites`,c:`Makoto, Haru, Ann, Kawakami, Ryuji Go to sleep`}]},
+{d:`October 27th`,m:10,day:27,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Read`,c:`Read Flowerpedia Book Finished!`}]},
+{d:`October 28th`,m:10,day:28,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Judgement Rank 6 (Auto)`,c:``}]},
+{d:`October 29th`,m:10,day:29,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Read`,c:`Read Learn Pro Darts Book Finished!`}]},
+{d:`October 30th`,m:10,day:30,type:`palace`,tags:["palace", "social"],sa:["Save before: Darts \u2014 Invite Akechi Akechi Baton Pass Rank Up! Rank 2 Proficiency UP +3 Proficiency UP +2 (Optional) Magician +1 Justice +1 Al"],steps:[{t:`Daytime`,l:`Money Reading`,c:`Boost Money Infiltrate the Palace Metaverse NOTE! Need to use 30 Down Shots for an award. Make sure to use 3 on every Metaverse trip.`},{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Trader`,c:`Trade Mystery Stew for Angel Badge`},{t:`Evening`,l:`Darts`,c:`Save Abuse Invite Akechi Akechi Baton Pass Rank Up! Rank 2 Proficiency UP +3 Proficiency UP +2 (Optional) Magician +1 Justice +1 All will become closer NOTE! Impossible to finish on Round 4.`}]},
+{d:`October 31st`,m:10,day:31,type:`palace`,tags:["palace", "social"],sa:["Save before: Darts \u2014 Invite Akechi Akechi Baton Pass Rank Up! Rank MAX Proficiency UP +3 Proficiency UP +2 (Optional) Magician +1 Justice +1 "],steps:[{t:`Afternoon`,l:`Class`,c:`Read Game Secrets Book Finished! Metaverse NOTE! Last reminder to use 3 Down Shots every time we visit the Metaverse. Secure Infiltration Route Leave the Palace Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Yakitori Across 1: Yukata Across 2 (Keyword): Stalls`},{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Darts`,c:`Save Abuse Invite Akechi Akechi Baton Pass Rank Up! Rank MAX Proficiency UP +3 Proficiency UP +2 (Optional) Magician +1 Justice +1 All will become closer ~Monthly Progress~ Confidants Arcana # Confidant Arcana Name Status N/A Prison Master Fool Rank 9 1 Morgana Magician Rank 9 2 Makoto Niijima Priestess Complete! Rank MAX 4 Yusuke Kitagawa Emperor `},{t:`Evening`,l:`Time Job, Full`,c:`Time Hell C Finished We Aren't Just Your Slaves C Finished Who's Been Assaulting People? C Finished Calling for Justice for Cats C Finished Ending the Boyfriend's Abuse C Finished Debunking the Psychic! C Finished Shady Deal in the Shadows C ID'd Bad Medicine C Finished A Teacher Maid to Suffer C Finished Fighting for Truth in Journalism C Finished`}]},
+{d:`November 1st`,m:11,day:1,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`After School`,l:`Chalkboard`,c:`Draw on Blackboard in Classroom Guts UP +2 (Optional)`},{t:`After School`,l:`Parts Shop`,c:`Located at Machine Parts Shop at Electric Town Buy Seeker's Tools`},{t:`After School`,l:`Sports Store`,c:`Located at Sports Store at Underground Walkway Buy Powerful Rod and Hi`},{t:`After School`,l:`Tech Rod`,c:`Money Reading- Boost Money Head into Mementos Metaverse`},{t:`After School`,l:`Request: Shady Deal in the Shadows`,c:`Located at Kaitul Area 4 Request Complete!`},{t:`After School`,l:`Request: Man of Many Faces and Debts`,c:`Located at Akzeriyyuth Area 3 Request Complete!`},{t:`After School`,l:`Request: Winners Don't Use Cheats`,c:`Located at Akzeriyyuth Area 5 Request Complete!`},{t:`After School`,l:`Request: Upstaging the Stage Mother`,c:`Located at Akzeriyyuth Area 6 Request Complete!`},{t:`After School`,l:`Request: The Killer Who Cleans Up Trash`,c:`Located at Akzeriyyuth Area 12 Request Complete!`},{t:`After School`,l:`Request: Daughter's Just a Meal Ticket`,c:`Located at Adyeshach Area 3 Request Complete!`},{t:`After School`,l:`Request: A Mother's Aggression`,c:`Located at Adyeshach Area 11 Request Complete!`},{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`DVD`,c:`Watch D. Housewives Charm UP +5`}]},
+{d:`November 2nd`,m:11,day:2,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Factorization Guide Book Complete! Morning`},{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 After School`},{t:`After School`,l:`Library`,c:`Rent Woman in the Dark`},{t:`After School`,l:`Empress Rank 1`,c:`Located at Rooftop at Shujin Academy New Ability Cultivation Evening`},{t:`Evening`,l:`Clothes Shop`,c:`Sell sooty armor`},{t:`Evening`,l:`Justice Rank 7`,c:`Requires Knowledge Rank Encyclopedic Option B, Any, Any, B, Any, A, C New Ability Harisen Recovery Will become closer`}]},
+{d:`November 3rd`,m:11,day:3,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Gardening`,c:`Located at Rooftop at Shujin Academy Need to do this five times for an award.`},{t:`Daytime`,l:`Empress Rank 2`,c:`Persona needed from now on Option C, C, A, C Will become closer Evening`},{t:`Evening`,l:`Moon Rank 10`,c:`New Ability Salvation Wish New Fusion Sandalphon`}]},
+{d:`November 4th`,m:11,day:4,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Crane Game`,c:`Give it a shake Obtained Lexy Doll`},{t:`After School`,l:`Tower Rank 9`,c:`Option A, C, A, C Kindness UP +5 Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Cash Down 2: Earned Across 1: Offer Across 2 (Keyword): Reward Knowledge UP +2`},{t:`Evening`,l:`Justice Rank 8`,c:`Persona no longer needed ( Option Any, Any, Any, Any, Any, A ("I definitely wouldn't lose."), B, A`}]},
+{d:`November 5th`,m:11,day:5,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Woman in the Dark Book Finished! Proficiency UP +5 Morning`},{t:`Morning`,l:`Class`,c:`Read Vague New Hangout Spot Harajuku After School`},{t:`After School`,l:`Library`,c:`Rent Dressed in Ashes`},{t:`After School`,l:`Empress Rank 3`,c:`Option C, A, B, A New Ability Follow Up Will become closer Evening`},{t:`Evening`,l:`Hanged Man Rank 8`,c:`Option B, B, A Proficiency UP +5 Will become closer`}]},
+{d:`November 6th`,m:11,day:6,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Hermit Rank 8`,c:`Option A, A, Any, C Will become closer Evening`},{t:`Evening`,l:`Hanged Man Rank 9`,c:`Option C, Any, Any, Any, B, A, A Will become closer`}]},
+{d:`November 7th`,m:11,day:7,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Empress Rank 4`,c:`Requires Proficiency Rank Transcendent Option C, C, B, C, C, C New Ability Celeb Talk Will become closer Evening`},{t:`Evening`,l:`Star Rank 8`,c:`Option C, Any, A Knowledge UP +2 Will not become closer`}]},
+{d:`November 8th`,m:11,day:8,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option A Knowledge UP +2 After School`},{t:`After School`,l:`Affinity Reading`,c:`Boost Hifumi Star +2 Will not become closer`},{t:`After School`,l:`Empress Rank 5`,c:`Option B, C, C, C New Ability Bumper Crop Will become closer Evening`},{t:`Evening`,l:`Hanged Man Rank 10`,c:`Persona no longer needed New Ability On The House New Fusion Attis Proficiency UP +5`}]},
+{d:`November 9th`,m:11,day:9,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Affinity Reading`,c:`Boost Hifumi Star +2 Will become closer`},{t:`After School`,l:`Hermit Rank 9`,c:`Option A, B, B, A (Platonic) or B (Intimate), Any (Intimate only), Any (Intimate only), Any (Intimate only), C (Phone) New Ability Emergency Shift Will become closer Evening`},{t:`Evening`,l:`Star Rank 9`,c:`Option A, C, A (Platonic) or B (Intimate), A (Intimate) or B (Platonic), C (Phone) New Ability Touryou Will not become closer`}]},
+{d:`November 10th`,m:11,day:10,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Dressed in Ashes Book Finished! Charm UP +5 Morning Option B Knowledge UP +2 After School`},{t:`After School`,l:`Library`,c:`Rent The Hero with a Bow`},{t:`After School`,l:`Tower Rank 10`,c:`Persona no longer needed New Ability Oda Special New Fusion Mada Kindness UP +2 Evening`},{t:`Evening`,l:`Affinity Reading`,c:`Boost Hifumi Star +2 Will become closer`},{t:`Evening`,l:`Fortune Rank 10`,c:`Persona no longer needed New Ability Special Bond Reading New Fusion Lakshmi`}]},
+{d:`November 11th`,m:11,day:11,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Class`,c:`Read The Hero with a Bow Book Finished! Guts UP +5 After School`},{t:`After School`,l:`Empress Rank 6`,c:`Option C, A, C, Any, B, A New Ability Harisen Recovery Will become closer Evening`},{t:`Evening`,l:`Billiards`,c:`Proficiency UP +3 (Optional) Priestess +1 Empress +1 Emperor +1 Lovers +1 Chariot +1 Justice +1 Hermit +1 All will become closer`}]},
+{d:`November 12th`,m:11,day:12,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Councillor Rank 9`,c:`Persona no longer needed Option Any, A New Ability Detox DX Evening`},{t:`Evening`,l:`Star Rank 10`,c:`Persona no longer needed New Ability Togo System New Fusion Lucifer`}]},
+{d:`November 13th`,m:11,day:13,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Supermarket`,c:`Buy Moon Dango from Supermarket at Backstreets`},{t:`Daytime`,l:`Hermit Rank 10`,c:`Persona no longer needed New Ability Final Guard Second Awakening Necronomicon to Prometheus New Fusion Ongyo`},{t:`Daytime`,l:`Ki Evening`,c:`Trader- Trade Moon Dango for Kintaro Axe`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`November 14th`,m:11,day:14,type:`free`,tags:["social"],sa:[],steps:[{t:`Early Morning`,l:`Train`,c:`Read Night Skies Book Finished! New Hangout Spot Ikebukuro Morning`},{t:`Morning`,l:`Lesson`,c:`Option C Knowledge UP +2 After School`},{t:`After School`,l:`Empress Rank 7`,c:`Option Any, C, C, B, B New Ability Soil Improvement Will become closer Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Bashing Across 1: Verbal Across 2: Physical Knowledge UP +2`},{t:`Evening`,l:`Read`,c:`Read Chinese Sweets Book Finished! New Hangout Spot Chinatown`}]},
+{d:`November 15th`,m:11,day:15,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option C (PS4) or D (Next`},{t:`Morning`,l:`Gen) Knowledge UP +2 After School`,c:`Empress Rank 8- Option A, B, B, C New Ability Endure Will become closer Evening`},{t:`Evening`,l:`Read`,c:`Read Tokyo Shrines Book Finished! New Hangout Spot Meiji Shrine`}]},
+{d:`November 16th`,m:11,day:16,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Class`,c:`Read Yoncha Walker 04 Book Finished! After School`},{t:`After School`,l:`Darts`,c:`Proficiency UP +3 Proficiency UP +2 NOTE! Doesn't matter what happens here, just trying to obtain an award. Evening`},{t:`Evening`,l:`Justice Spend Time`,c:`Accept Justice Invite Justice UP +2`},{t:`Night`,l:`November 17th~ Early Morning`,c:`Train- Read Nakano Walker Book Finished! New Hangout Spot Nakano Morning`},{t:`Morning`,l:`Class`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Darts`,c:`Proficiency UP +3 Proficiency UP +2 Evening`},{t:`Evening`,l:`Read`,c:`Speed`},{t:`Evening`,l:`Day`,c:`Awards- Obtained Bookworm Award! Finished reading a total of 40 books. Evening`},{t:`Evening`,l:`Darts`,c:`Proficiency UP +3 Proficiency UP +2`}]},
+{d:`November 18th`,m:11,day:18,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Councillor Rank 10 (Auto)`,c:`New Ability Wakefulness New Fusion Vohu Manah Evening`},{t:`Evening`,l:`Curry`,c:`Located at Fridge in Cafe Leblanc Guts UP +2`}]},
+{d:`November 19th`,m:11,day:19,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`November 20th`,m:11,day:20,type:`free`,tags:["free"],sa:["Save here \u2014 - You can save abuse here to view every ending if you wish. HIGHLY IMPORTANT! HIGHLY IMPORTANT! HIGHLY IMPORTANT! HIGHLY", "Save before: Save Abuse \u2014 here to view every ending if you wish. HIGHLY IMPORTANT! HIGHLY IMPORTANT! HIGHLY IMPORTANT! HIGHLY IMPORTANT! HIGHLY IM"],steps:[{t:`Daytime`,l:`Save Abuse`,c:`You can save abuse here to view every ending if you wish. From here on out there will be dialog responses that decide the ending you get. There are 3 endings in Persona 5, and 5 endings in Persona 5 Royal. I will map out the options for each ending, but will not detail what each options says in order to avoid major spoilers. If you want to try to g`},{t:`Daytime`,l:`Response`,c:`Sae: "Those are your accomplices in the Phantom Thieves case, are they not?" Good/True Ending: Option A or B, A Bad Ending 1: Option C (First Response) or Option B (Second Response) WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!! The following is what happens if you choose the Good/True Ending.`},{t:`Daytime`,l:`Judgement Rank 10 (Auto)`,c:`New Ability True Justice New Fusion Satan`}]},
+{d:`November 21st`,m:11,day:21,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`November 22nd`,m:11,day:22,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Coffee`,c:`Charm UP +2`}]},
+{d:`November 23rd`,m:11,day:23,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`DVD`,c:`Watch D. Housewives DVD Finished! Charm UP +5`}]},
+{d:`November 24th`,m:11,day:24,type:`free`,tags:["social"],sa:["Save before: Game \u2014 Play Star Forneus Guts UP +3"],steps:[{t:`Evening`,l:`Game`,c:`Save Abuse Play Star Forneus Guts UP +3`}]},
+{d:`November 25th`,m:11,day:25,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Request`,c:`Received Swindling Old Folk is Pretty Low`},{t:`After School`,l:`Empress Rank 9`,c:`Option Any, C, B, A (Platonic) or B (Intimate), B New Ability Protect Will become closer Evening`},{t:`Evening`,l:`Crane Game`,c:`Give it a pounding Obtained Sheep Man Doll`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`November 26th`,m:11,day:26,type:`free`,tags:["social"],sa:["Save before: Game \u2014 Play Star Forneus Game Finished! Guts UP +3"],steps:[{t:`After School`,l:`Empress Rank 10`,c:`Persona no longer needed New Ability Second Awakening Milady to Astarte New Fusion Mother Harlot Evening`},{t:`Evening`,l:`Game`,c:`Save Abuse Play Star Forneus Game Finished! Guts UP +3`}]},
+{d:`November 27th`,m:11,day:27,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`Daytime`,l:`Vendor`,c:`Buy Legendary Yaki`},{t:`Daytime`,l:`Imo from Sweet Potato Vendor at Backstreets`,c:`Money Reading- Boost Money Infiltrate the Palace Metaverse`},{t:`Daytime`,l:`Strength Confidant`,c:`Now is the last chance to finish the Strength Confidant. Skill Cards can be used to make this easier. NOTE! Downloading DLC Personas might alter fusion results.`},{t:`Daytime`,l:`Strength Rank 2`,c:`Berith + Suzaku`},{t:`Daytime`,l:`Strength Rank 3`,c:`Berith + Eligor + Orobas New Ability Lockdown`},{t:`Daytime`,l:`Strength Rank 4`,c:`Part 1: Jack o' Lantern + Hua Po Part 2: Kelpie + Yaksini`},{t:`Daytime`,l:`Strength Rank 5`,c:`Silky + Lamia New Ability Special Treatment`},{t:`Daytime`,l:`Strength Rank 6`,c:`Anzu (Dekaja Lv 28) + Kodama + Sudama`},{t:`Daytime`,l:`Strength Rank 7`,c:`Part 1: Principality + Sandman Part 2: Anzu + Thoth`},{t:`Daytime`,l:`Strength Rank 8`,c:`Anzu + Lilim (Masukunda Lv 24) New Ability Guillotine Booster`},{t:`Daytime`,l:`Strength Rank 9`,c:`Hariti (Samarecarm Lv 41) + Pixie + Pisaca`},{t:`Daytime`,l:`Strength Rank 10`,c:`Part 1: Ame no Uzume + Dakini (High Counter Lv 52) Part 2: Anubis + Isis + Thoth + Horus New Ability VIP Treatment New Fusion Zaou`},{t:`Daytime`,l:`Gongen`,c:`Trophies- Obtained Intensive Training Trophy! Used Incense on a Persona in Lockdown.`},{t:`Daytime`,l:`Justice Rank 9 (Auto)`,c:``},{t:`Daytime`,l:`Justice Rank 10 (Auto)`,c:`New Fusion Metatron Evening`},{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Trader`,c:`Trade Legendary Yaki`},{t:`Evening`,l:`Imo for 3 Empowering Ofuda`,c:`Game- Play Featherman Seeker Knowledge UP +3`},{t:`Evening`,l:`Response`,c:`Joker: Does this mean we'll never meet again...? Option B (Extra Story Flag)`}]},
+{d:`November 28th`,m:11,day:28,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Crossword`,c:`Down 1: Boring Down 2: Swagger Across 1 (Keyword): Charisma Knowledge UP +2`},{t:`Evening`,l:`Game`,c:`Play Featherman Seeker Knowledge UP +3`}]},
+{d:`November 29th`,m:11,day:29,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Free Time`,c:`If you are behind on Confidants, now is the time to catch up. The rest of this walkthrough will be dedicated to obtaining all Trophies and Awards. If this doesn't matter to you, then the rest of the game is free time for anything you want to accomplish.`},{t:`After School`,l:`Maid Cafe`,c:`Order Sincere Omelette Kindness UP +2 (Optional) Charm UP +3 Evening`},{t:`Evening`,l:`Game`,c:`Play Featherman Seeker Game Finished! Knowledge UP +3`}]},
+{d:`November 30th`,m:11,day:30,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Maid Cafe`,c:`Order Sincere Omelette Kindness UP +2 (Optional) Charm UP +3 Evening`},{t:`Evening`,l:`Game`,c:`Play Punch Ouch Charm UP +3 ~Monthly Progress~ Confidants Arcana # Confidant Arcana Name Status N/A Prison Master Fool Rank 9 1 Morgana Magician Rank 9 2 Makoto Niijima Priestess Rank MAX 3 Haru Okumura Empress New/Complete! Rank MAX 4 Yusuke Kitagawa Emperor Rank MAX 5 Sojiro Sakura Hierophant Rank MAX 6 Ann Takamaki Lovers Rank MAX 7 Ryuji Sakamo`},{t:`Evening`,l:`Time Job, Full`,c:`Time Hell C Finished We Aren't Just Your Slaves C Finished Who's Been Assaulting People? C Finished Calling for Justice for Cats C Finished Ending the Boyfriend's Abuse C Finished Debunking the Psychic! C Finished Shady Deal in the Shadows C Complete! Bad Medicine C Finished A Teacher Maid to Suffer C Finished Fighting for Truth in Journalism C Fin`}]},
+{d:`December 1st`,m:12,day:1,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Maid Cafe`,c:`Order Sincere Omelette Kindness UP +2 (Optional) Charm UP +3`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`December 2nd`,m:12,day:2,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Maid Cafe`,c:`Kindness UP +2 (Optional) Charm UP +5`},{t:`Evening`,l:`Crossword`,c:`Down 1: Fatigue Down 2: Achoo Across 1 (Keyword): Influenza Knowledge UP +2`},{t:`Evening`,l:`Game`,c:`Play Punch Ouch Charm UP +3`}]},
+{d:`December 3rd`,m:12,day:3,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Request`,c:`Received The Head Honcho in Showbiz`},{t:`After School`,l:`Part`,c:`time Job- Work a part`},{t:`After School`,l:`time job Evening`,c:`Game- Play Punch Ouch Game Finished! Charm UP +3`}]},
+{d:`December 4th`,m:12,day:4,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Part`,c:`time Job- Work a part`},{t:`Daytime`,l:`time job Evening`,c:`Game- Play Train of Life Kindness UP +3`}]},
+{d:`December 5th`,m:12,day:5,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Part`,c:`time Job- Work a part`},{t:`After School`,l:`time job Evening`,c:`Game- Play Train of Life Kindness UP +3`}]},
+{d:`December 6th`,m:12,day:6,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Part`,c:`time Job- Work a part`},{t:`After School`,l:`time job Evening`,c:`Game- Play Train of Life Game Finished! Kindness UP +3`}]},
+{d:`December 7th`,m:12,day:7,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Part`,c:`time Job- Work a part`},{t:`After School`,l:`time job`,c:``},{t:`After School`,l:`time job a total of 15 times. Evening`,c:`Crossword- Down 1: Candle Down 2: Torch Across 1 (Keyword): Illuminate Knowledge UP +2`},{t:`Evening`,l:`Game`,c:`Play Power Intuition Guts UP +3`}]},
+{d:`December 8th`,m:12,day:8,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Gym`,c:`Located at Gym in Central Street Work out at Gym Evening`},{t:`Evening`,l:`Game`,c:`Play Power Intuition Guts UP +3`}]},
+{d:`December 9th`,m:12,day:9,type:`free`,tags:["social"],sa:["Save before: Game \u2014 this one. It can be tricky."],steps:[{t:`After School`,l:`Gym`,c:`Work out at Gym Evening`},{t:`Evening`,l:`Game`,c:`Play Power Intuition Game Finished! Guts UP +3 NOTE! May want to Save Abuse this one. It can be tricky.`}]},
+{d:`December 10th`,m:12,day:10,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Request`,c:`Received Lady`},{t:`After School`,l:`Killer's Ballad`,c:`Gym- Work out at Gym Evening`},{t:`Evening`,l:`Game`,c:`Play Golfer Sarutahiko Proficiency UP +3`}]},
+{d:`December 11th`,m:12,day:11,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Supermarket`,c:`Buy Angel Tart from Supermarket at Underground Mall`},{t:`Daytime`,l:`Gym`,c:`Work out at Gum Evening`},{t:`Evening`,l:`Trader`,c:`Trade Angel Tart for Fervent Bat`},{t:`Evening`,l:`Game`,c:`Play Golfer Sarutahiko Proficiency UP +3`}]},
+{d:`December 12th`,m:12,day:12,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Gym`,c:`Work out at Gym Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Approval Across 1: Electoral Across 2: Poll Knowledge UP +2`},{t:`Evening`,l:`Game`,c:`Play Golfer Sarutahiko Game Finished! Proficiency UP +3`}]},
+{d:`December 13th`,m:12,day:13,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Gym`,c:`Work out at Gym Evening`},{t:`Evening`,l:`Batting Cages`,c:`Located at Batting Cages at Backstreets Hit 30 Home Runs Proficiency UP +3 NOTE! This can take a while. You may find it easier on a higher difficulty. You get a home run for good timing and having the bat lined up to the bottom 50-75% of the ball.`}]},
+{d:`December 14th`,m:12,day:14,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Gym`,c:`Work out at Gym Evening`},{t:`Evening`,l:`Fishing`,c:`Located at Ichigaya Proficiency UP +2`}]},
+{d:`December 15th`,m:12,day:15,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Bookstore`,c:`Batting Science (Shinjuku) Essence of Fishing (Shinjuku)`},{t:`After School`,l:`Crane Game`,c:`Shoot it with your gun Obtained Black Frost Doll`},{t:`After School`,l:`Gym`,c:`Work out at Gym Evening`},{t:`Evening`,l:`Read`,c:`Read Batting Science Book Finished!`}]},
+{d:`December 16th`,m:12,day:16,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Gym`,c:`Work out at Gym Evening`},{t:`Evening`,l:`Read`,c:`Read Essence of Fishing Book Finished!`}]},
+{d:`December 17th`,m:12,day:17,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Gym`,c:`Work out at Gym Evening`},{t:`Evening`,l:`Bath`,c:`Charm UP +3`}]},
+{d:`December 18th`,m:12,day:18,type:`free`,tags:["palace", "social"],sa:[],steps:[{t:`Evening`,l:`Trophy`,c:`Obtained Cruiser of Pride Capsized Trophy! Completed the Cruise Ship Palace`},{t:`Evening`,l:`Game`,c:`Play Gambla Goemon Charm UP +3`}]},
+{d:`December 19th`,m:12,day:19,type:`free`,tags:["social"],sa:[],steps:[{t:`Evening`,l:`Crossword`,c:`Down 1: Chimney Down 2: Carol Across 1 (Keyword): Christmas Knowledge UP +2`},{t:`Evening`,l:`Bath`,c:`Charm UP +3`}]},
+{d:`December 20th`,m:12,day:20,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`December 22nd`,m:12,day:22,type:`palace`,tags:["palace", "social"],sa:[],steps:[{t:`After School`,l:`Money Reading`,c:`Boost Money Head into Mementos Metaverse`},{t:`After School`,l:`Request: Swindling Old Folk is Pretty Low`,c:`Located at Asyeshach Area 13 Request Complete!`},{t:`After School`,l:`Request: Lady`,c:`Killer's Ballad- Located at Sheriruth Area 8 Request Complete!`},{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Bath`,c:`Charm UP +3`}]},
+{d:`December 23rd`,m:12,day:23,type:`free`,tags:["exam", "social"],sa:[],steps:[{t:`Evening`,l:`Exam Reward`,c:`Talk to Sojiro`},{t:`Evening`,l:`Game`,c:`Play Gambla Goemon Game Finished! Charm UP +3`},{t:`Evening`,l:`Magician Rank 10 (Auto)`,c:`New Ability Second Awakening Zorro to Mercurius New Fusion Futsunushi`}]},
+{d:`December 24th`,m:12,day:24,type:`palace`,tags:["palace", "exam", "social"],sa:[],steps:[{t:`Morning`,l:`Exam Results`,c:`Charm UP +5 Metaverse`},{t:`Morning`,l:`Fool Rank 10 (Auto)`,c:`New Ability Max Arcana Burst New Fusion Vishnu`},{t:`Morning`,l:`Response`,c:`Joker: Is that really how the world should be? Good/True Ending: Option A Bad Ending 2: Option B WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!! The following is what happens if you choose the Good/True Ending.`},{t:`Evening`,l:`Date Invites`,c:`Ann, Futaba, Haru, Hifumi, Makoto, Chihaya, Kawakami, Takemi, Ohya ~Monthly Progress~ Confidants Arcana # Confidant Arcana Name Status N/A Prison Master Fool Rank MAX 1 Morgana Magician Rank MAX 2 Makoto Niijima Priestess Rank MAX 3 Haru Okumura Empress Rank MAX 4 Yusuke Kitagawa Emperor Rank MAX 5 Sojiro Sakura Hierophant Rank MAX 6 Ann Takamaki L`},{t:`Evening`,l:`Time Job, Full`,c:`Time Hell C Finished We Aren't Just Your Slaves C Finished Who's Been Assaulting People? C Finished Calling for Justice for Cats C Finished Ending the Boyfriend's Abuse C Finished Debunking the Psychic! C Finished Shady Deal in the Shadows C Finished Bad Medicine C Finished A Teacher Maid to Suffer C Finished Fighting for Truth in Journalism C Fini`}]},
+{d:`January 2nd`,m:1,day:2,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`January 3rd`,m:1,day:3,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Investigation`,c:`Spend the next few days talking to your friends. WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!! From here on out, the identities of certain individuals will no longer be kept secret. You have been warned.`}]},
+{d:`January 9th`,m:1,day:9,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Response`,c:`Maruki: "I ask you to give me your answer." True Ending: Option A Good(?) Ending: Option B WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!! The following is what happens if you chose the True Ending. Evening Go to sleep`}]},
+{d:`January 10th`,m:1,day:10,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`January 11th`,m:1,day:11,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option C, A Charm UP +2 Evening Go to sleep`}]},
+{d:`January 12th`,m:1,day:12,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`January 13th`,m:1,day:13,type:`free`,tags:["social"],sa:["Save before: Darts \u2014 Invite Sumire Round 4 Response: Option C Sumire Baton Pass Rank Up! Rank MAX Proficiency UP +3 Proficiency UP +2 (Option"],steps:[{t:`After School`,l:`Trader`,c:`Buy Special Chimaki from Chinese Bun Shop in Kichijoji Trade Special Chimaki for Strength Belt`},{t:`After School`,l:`Faith Rank 6`,c:`Option Any, Any, Any, Any, Any, Any, Any, Any, Any, B (Phone) New Ability Follow Up Fitness Talk Will become closer Evening`},{t:`Evening`,l:`Request`,c:`Received A Small Cry for Help`},{t:`Evening`,l:`Darts`,c:`Save Abuse Invite Sumire Round 4 Response: Option C Sumire Baton Pass Rank Up! Rank MAX Proficiency UP +3 Proficiency UP +2 (Optional) Magician +1 (Optional) Emperor +1 (Optional) Chariot +1 (Optional) Faith +1 All will become closer`}]},
+{d:`January 14th`,m:1,day:14,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Faith Rank 7`,c:`Option Any, Any, A, A, Any, A, C New Ability Harisen Recovery Will become closer Evening`},{t:`Evening`,l:`Request`,c:`Received O My Young Sister, I Cry For You`},{t:`Evening`,l:`Crossword`,c:`Down 1: Exercise Down 2: Diet Across 1 (Keyword): Resolution Knowledge UP +2`},{t:`Evening`,l:`Strength Spend Time`,c:``}]},
+{d:`January 15th`,m:1,day:15,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Hermit Spend Time`,c:`Persona Evolution Prometheus to Al Azif Evening`},{t:`Evening`,l:`Bath`,c:`Charm UP +5`}]},
+{d:`January 16th`,m:1,day:16,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Faith Rank 8`,c:`Option A, Any, B, Any, Any, C, Any, Any, B, C New Ability Endure Will become closer Evening`},{t:`Evening`,l:`Bath`,c:`Charm UP +3 Guts UP +2`}]},
+{d:`January 17th`,m:1,day:17,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Crane Game`,c:`Cast Megidolaon on it. Obtained Buchimaru Doll`},{t:`After School`,l:`Chariot Spend Time`,c:`Persona Evolution Seiten Taisei to William Evening`},{t:`Evening`,l:`Bath`,c:`Charm UP +3 Guts UP +2`}]},
+{d:`January 18th`,m:1,day:18,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Faith Rank 9`,c:`Option Any, A ("It's no problem."), A, A, C, C, Any, A (Platonic) or B (Intimate), A (Intimate route) or C (Platonic route), C (Intimate only), A (Phone) New Ability Protect Will become closer Evening`},{t:`Evening`,l:`Bath`,c:`Charm UP +3`}]},
+{d:`January 19th`,m:1,day:19,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Faith Rank 10`,c:`Persona no longer needed New Ability Second Awakening Cendrillon to Vanadis New Fusion Maria`},{t:`Evening`,l:`Crossword`,c:`Down 1: Festivity Down 2: Wine Across 1 (Keyword): Dionysus Knowledge UP +2`},{t:`Evening`,l:`Gym`,c:`Work out at Gym`}]},
+{d:`January 20th`,m:1,day:20,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Gym`,c:`Work out at Gym Evening`},{t:`Evening`,l:`Gym`,c:`Work out at Gym`}]},
+{d:`January 21st`,m:1,day:21,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Lovers Spend Time`,c:`Persona Evolution Hecate to Celestine Evening`},{t:`Evening`,l:`Jazz Club`,c:`Spend time at Jazz Club`}]},
+{d:`January 22nd`,m:1,day:22,type:`free`,tags:["free"],sa:[],steps:[{t:`Daytime`,l:`Big Bang Burger`,c:`Buy Supernova Burger at Big Bang Burger`},{t:`Daytime`,l:`Emperor Spend Time`,c:`Persona Evolution Kamu Susano`},{t:`Daytime`,l:`o to Gorokichi Evening`,c:`Trader- Trade Supernova Burger for Old Man's Elixir`},{t:`Evening`,l:`Jazz Club`,c:`Spend time at Jazz Club`}]},
+{d:`January 23rd`,m:1,day:23,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Empress Spend Time`,c:`Persona Evolution Astarte to Lucy Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1 (Keyword): Lachesis Across 1: Destined Across 2: Life Knowledge UP +2`},{t:`Evening`,l:`Jazz Club`,c:`Spend time at Jazz Club`}]},
+{d:`January 24th`,m:1,day:24,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B, C, C Knowledge UP +2 After School`},{t:`After School`,l:`Priestess Spend Time`,c:`Persona Evolution Anat to Agnes Evening`},{t:`Evening`,l:`Jazz Club`,c:`Spend time at Jazz Club`}]},
+{d:`January 25th`,m:1,day:25,type:`palace`,tags:["palace"],sa:[],steps:[{t:`After School`,l:`Money Reading`,c:`Boost Money Head into Mementos Metaverse`},{t:`After School`,l:`Request: A Small Cry for Help`,c:`Located at Da'at Area 2 Request Complete!`},{t:`After School`,l:`Request: O My Young Sister, I Cry For You`,c:`Located at Da'at Area 7 Request Complete!`},{t:`Evening`,l:`Jazz Club`,c:`Spend time at Jazz Club`}]},
+{d:`January 26th`,m:1,day:26,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Jazz Jin`,c:`Spend time at Jazz Jin`}]},
+{d:`January 27th`,m:1,day:27,type:`free`,tags:["social"],sa:[],steps:[{t:`Morning`,l:`Lesson`,c:`Option B Knowledge UP +2 After School`},{t:`After School`,l:`Request`,c:`Received Fake`},{t:`After School`,l:`Man Show`,c:`Crane Game- Destroy it Obtained Jagao Doll`},{t:`After School`,l:`Temple`,c:`Talk to Gentle`},{t:`After School`,l:`Faced Monk at Shopping District Spend time at Temple`,c:`Trophies- Obtained A Serene Experience Visited a temple. Evening`},{t:`Evening`,l:`Crossword`,c:`Down 1: Treasure Down 2: Shinto Across 1 (Keyword): Orochi Knowledge UP +2`},{t:`Evening`,l:`Laundry`,c:`Located at Washing Machine at Backstreets Wash 4 different types of Sooty Equipment NOTE! Need to wash it yourself.`}]},
+{d:`January 28th`,m:1,day:28,type:`palace`,tags:["palace"],sa:[],steps:[{t:`After School`,l:`Request`,c:`Received An Idol and a Unicorn`},{t:`After School`,l:`Request: An Idol and a Unicorn`,c:`Talk to Woman in a White Coat at Electric Town Talk to Anji Fuwa at Electric Town Request ID'd!`},{t:`After School`,l:`Request: Fake`,c:`Man Show- Talk to Kichijoji`},{t:`After School`,l:`Native Boy at Shopping District Talk to Listless`,c:`Looking Student at Shopping District Request ID'd!`},{t:`After School`,l:`Money Reading`,c:`Boost Money Head into Mementos Mementos`},{t:`After School`,l:`Request: An Idol and a Unicorn`,c:`Located at Da'at Area 13 Request Complete!`},{t:`After School`,l:`Request: Fake`,c:`Man Show- Located at Da'at Area 15 Request Complete!`},{t:`Evening`,l:`Massage`,c:`Call Kawakami`},{t:`Evening`,l:`Laundry`,c:`Wash 4 different types of Sooty Equipment`}]},
+{d:`January 29th`,m:1,day:29,type:`free`,tags:["social"],sa:[],steps:[{t:`Daytime`,l:`Hidden CD`,c:`Talk to Star Lilina in Akihabara Obtained Star Lilina's New CD This unlocks a music track in the Thieves Den`},{t:`Daytime`,l:`Laundry`,c:`Wash at least 2 different types of Sooty Equipment`},{t:`Daytime`,l:`Jaya. Evening`,c:`Fishing- Spend time fishing Proficiency UP +2 NOTE! Need 100,000 points for an Award.`}]},
+{d:`January 30th`,m:1,day:30,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Fishing`,c:`Spend time fishing Proficiency UP +2 Evening`},{t:`Evening`,l:`Fishing`,c:`Spend time fishing Proficiency UP +2`}]},
+{d:`January 31st`,m:1,day:31,type:`free`,tags:["social"],sa:[],steps:[{t:`After School`,l:`Fishing`,c:`Spend time fishing Proficiency UP +2 Evening`},{t:`Evening`,l:`Fishing`,c:`Spend time fishing Proficiency UP +2 ~Monthly Progress~ Confidants Arcana # Confidant Arcana Name Status N/A Prison Master Fool Rank MAX 1 Morgana Magician Rank MAX 2 Makoto Niijima Priestess Rank MAX 3 Haru Okumura Empress Rank MAX 4 Yusuke Kitagawa Emperor Rank MAX 5 Sojiro Sakura Hierophant Rank MAX 6 Ann Takamaki Lovers Rank MAX 7 Ryuji Sakamot`},{t:`Evening`,l:`Time Job, Full`,c:`Time Hell C Finished We Aren't Just Your Slaves C Finished Who's Been Assaulting People? C Finished Calling for Justice for Cats C Finished Ending the Boyfriend's Abuse C Finished Debunking the Psychic! C Finished Shady Deal in the Shadows C Finished Bad Medicine C Finished A Teacher Maid to Suffer C Finished Fighting for Truth in Journalism C Fini`}]},
+{d:`February 1st`,m:2,day:1,type:`free`,tags:["social"],sa:["Save here \u2014 here to obtain the fishing Award. -Fishing- Spend time fishing Proficiency UP +2 Evening -Fishing- Spend time fishing Pr"],steps:[{t:`After School`,l:`Fishing`,c:`Spend time fishing Proficiency UP +2 Evening`},{t:`Evening`,l:`Fishing`,c:`Spend time fishing Proficiency UP +2`}]},
+{d:`February 2nd`,m:2,day:2,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Faith Invite`,c:`Accept Faith Invite Persona Evolution Vanadis to Ella Evening`},{t:`Evening`,l:`Response`,c:`Akechi: "I won't wait a moment longer. Answer me." True Ending: Option A Good(?) Ending: Option B WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!! The following is what happens if you choose the True Ending. Persona Evolution Loki to Hereward`}]},
+{d:`February 3rd`,m:2,day:3,type:`free`,tags:["free"],sa:[],steps:[]},
+{d:`February 13th`,m:2,day:13,type:`free`,tags:["free"],sa:[],steps:[{t:`Evening`,l:`Date Invites`,c:`Ohya, Takemi, Kawakami, Hifumi, Chihaya, Futaba, Ann, Makoto, Haru, Sumire NOTE! Saving Monthly Progress for the end of March. March`}]},
+{d:`March 14th`,m:3,day:14,type:`free`,tags:["free"],sa:[],steps:[{t:`After School`,l:`Date Invites`,c:`Ohya, Takemi, Kawakami, Hifumi, Chihaya, Futaba, Ann, Makoto, Haru, Sumire`}]},
+{d:`March 19th`,m:3,day:19,type:`palace`,tags:["palace"],sa:[],steps:[{t:`Daytime`,l:`Confidants`,c:`Say goodbye to your friends, then go home.`},{t:`Daytime`,l:`Save`,c:`Save New Game Plus Data ~First Playthrough Checklist~ Confidants All Confidants Complete! Mementos Requests All Mementos Requests Complete! Baton Pass Rank All Baton Pass Ranks Complete! Technical Rank All Technical Ranks Complete! Books All Books Complete! DVD's DVD Episodes Status 31 2 Finished D. Housewives 2 Finished ICU 2 Finished Jail Break 2`}]}
+];
+
+const PALACES={
+  4:{name:"Kamoshida's Castle",color:"#E8002D",deadline:"May 2nd"},
+  5:{name:"Madarame's Museum",color:"#A855F7",deadline:"Jun 5th"},
+  6:{name:"Kaneshiro's Bank",color:"#D4AF37",deadline:"Jul 9th"},
+  7:{name:"Futaba's Pyramid",color:"#F97316",deadline:"Aug 21st"},
+  8:{name:"Okumura's Spaceport",color:"#3B82F6",deadline:"Oct 11th"},
+  9:{name:"Okumura's Spaceport",color:"#3B82F6",deadline:"Oct 11th"},
+  10:{name:"Niijima's Casino",color:"#22C55E",deadline:"Nov 19th"},
+  11:{name:"Shido's Ship",color:"#06B6D4",deadline:"Dec 18th"},
+  12:{name:"Mementos / Final",color:"#8B5CF6",deadline:"Dec 24th"},
+  1:{name:"Maruki's Laboratory",color:"#EC4899",deadline:"Feb 3rd"},
+  2:{name:"Maruki's Laboratory",color:"#EC4899",deadline:"Feb 3rd"},
+  3:{name:"Epilogue",color:"#6B7280",deadline:null}
+};
+const MONTHS={1:"JANUARY",2:"FEBRUARY",3:"MARCH",4:"APRIL",5:"MAY",6:"JUNE",
+  7:"JULY",8:"AUGUST",9:"SEPTEMBER",10:"OCTOBER",11:"NOVEMBER",12:"DECEMBER"};
+const MONTH_ORDER=[4,5,6,7,8,9,10,11,12,1,2,3];
+const MONTH_DAYS={4:30,5:31,6:30,7:31,8:31,9:30,10:31,11:30,12:31,1:31,2:28,3:31};
+const MONTH_DOW={4:0,5:3,6:6,7:1,8:4,9:0,10:2,11:5,12:0,1:3,2:6,3:0};
+
+let curIdx=0,calMonth=4;
+let done=JSON.parse(localStorage.getItem('p5r_done3')||'{}');
+let checked=JSON.parse(localStorage.getItem('p5r_chk3')||'{}');
+function save(){localStorage.setItem('p5r_done3',JSON.stringify(done));localStorage.setItem('p5r_chk3',JSON.stringify(checked));}
+function dayIdx(m,d){return SCHEDULE.findIndex(s=>s.m===m&&s.day===d)}
+
+function extractBadges(c){
+  const b=[];
+  if(/Knowledge UP/i.test(c))b.push({cl:'bk',t:'+Know'});
+  if(/Guts UP/i.test(c))b.push({cl:'bg',t:'+Guts'});
+  if(/Charm UP/i.test(c))b.push({cl:'bc',t:'+Charm'});
+  if(/Kindness UP/i.test(c))b.push({cl:'bki',t:'+Kind'});
+  if(/Proficiency UP/i.test(c))b.push({cl:'bp',t:'+Prof'});
+  if(/(Obtained|Earn).*Yen/i.test(c))b.push({cl:'bm',t:'+¥'});
+  if(/Confidant Rank| Rank \d| Rank Up/i.test(c))b.push({cl:'bco',t:'Conf↑'});
+  return b;
+}
+
+const TYPE_LABELS={palace:'PALACE',story:'STORY',exam:'EXAM',confidant:'CONFIDANT',free:'FREE TIME'};
+const TYPE_CLS={palace:'t-palace',story:'t-story',exam:'t-exam',confidant:'t-confidant',free:'t-free'};
+const TIME_ORDER=['Early Morning','Morning','After School','Daytime','Afternoon','Evening','Night','Nighttime'];
+const TIME_ICONS={'Early Morning':'🌅','Morning':'🌅','After School':'☀️','Daytime':'☀️','Afternoon':'☀️','Evening':'🌙','Night':'🌙','Nighttime':'🌙'};
+
+function groupSteps(steps){
+  const g={};
+  for(const s of steps){const t=s.t||'Daytime';if(!g[t])g[t]=[];g[t].push(s);}
+  const out=[];
+  for(const t of TIME_ORDER){if(g[t])out.push({time:t,steps:g[t]});}
+  for(const t of Object.keys(g)){if(!TIME_ORDER.includes(t))out.push({time:t,steps:g[t]});}
+  return out;
+}
+
+function isSaveAbuseStep(label,content){
+  return /save abuse/i.test(label)||/save abuse/i.test(content);
+}
+
+function escH(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function updateHeader(){
+  const s=SCHEDULE[curIdx];
+  const doneCount=Object.values(done).filter(Boolean).length;
+  const pct=Math.round(doneCount/SCHEDULE.length*100);
+  document.getElementById('hdr-date').innerHTML=`Day <strong>${curIdx+1}</strong> of ${SCHEDULE.length}`;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-txt').textContent=pct+'%';
+  // Save abuse badge in header
+  const saBadge=document.getElementById('sa-badge');
+  saBadge.style.display=(s.sa&&s.sa.length)?'block':'none';
+  const pal=PALACES[s.m];
+  const strip=document.getElementById('pal-strip');
+  if(pal){
+    strip.style.display='flex';
+    strip.style.background=pal.color+'12';
+    strip.style.border='1px solid '+pal.color+'28';
+    strip.innerHTML=`<div class="pal-dot" style="background:${pal.color}"></div>
+      <span class="pal-name" style="color:${pal.color}">${pal.name}</span>
+      ${pal.deadline?`<span class="pal-dl">Deadline: ${pal.deadline}</span>`:''}`;
+  }else{strip.style.display='none';}
+}
+
+function pipColor(type,tags){
+  if(tags&&tags.includes('palace'))return'var(--red)';
+  if(tags&&tags.includes('exam'))return'var(--gold)';
+  if(tags&&tags.includes('confidant'))return'var(--purple)';
+  if(type==='story')return'var(--blue)';
+  return'var(--green)';
+}
+
+function renderCal(){
+  document.getElementById('m-label').textContent=MONTHS[calMonth]||'';
+  const idx=MONTH_ORDER.indexOf(calMonth);
+  document.getElementById('prev-m').disabled=idx<=0;
+  document.getElementById('next-m').disabled=idx>=MONTH_ORDER.length-1;
+  const grid=document.getElementById('cal-grid');
+  const startDow=MONTH_DOW[calMonth]||0;
+  const total=MONTH_DAYS[calMonth]||30;
+  let html='';
+  for(let i=0;i<startDow;i++)html+='<div class="cday empty"></div>';
+  for(let d=1;d<=total;d++){
+    const sidx=dayIdx(calMonth,d);
+    if(sidx<0){html+=`<div class="cday cno-data"><div class="cnum">${d}</div></div>`;continue;}
+    const s=SCHEDULE[sidx];
+    const isDone=done[sidx];
+    const isCur=sidx===curIdx;
+    const isPal=s.tags&&s.tags.includes('palace');
+    const hasSA=s.sa&&s.sa.length>0;
+    const pc=pipColor(s.type,s.tags);
+    html+=`<div class="cday ${isCur?'cur':''} ${isDone?'done':''} ${isPal?'pal':''} ${hasSA&&!isDone?'has-sa':''}" onclick="showDay(${sidx})">
+      ${isDone?'<div class="ccheck">✓</div>':''}
+      ${hasSA&&!isDone?'<div class="csa-dot">💾</div>':''}
+      <div class="cnum">${d}</div>
+      <div class="cpip" style="background:${pc}"></div>
+    </div>`;
+  }
+  grid.innerHTML=html;
+}
+
+function changeMonth(dir){
+  const idx=MONTH_ORDER.indexOf(calMonth);
+  calMonth=MONTH_ORDER[idx+dir];
+  renderCal();
+}
+
+function showDay(idx){
+  curIdx=idx;calMonth=SCHEDULE[idx].m;
+  updateHeader();renderDay();showView('day');
+}
+
+function gotoCurrentDay(){
+  for(let i=0;i<SCHEDULE.length;i++){if(!done[i]){curIdx=i;break;}}
+  calMonth=SCHEDULE[curIdx].m;
+  updateHeader();renderDay();showView('day');
+}
+
+function renderDay(){
+  const s=SCHEDULE[curIdx];
+  const isDone=!!done[curIdx];
+  const pal=PALACES[s.m];
+  const palColor=pal?pal.color:'var(--red)';
+  document.getElementById('dnav-title').textContent=s.d.toUpperCase();
+  document.getElementById('prev-d').disabled=curIdx<=0;
+  document.getElementById('next-d').disabled=curIdx>=SCHEDULE.length-1;
+
+  let html='';
+
+  // ── SAVE ABUSE BANNER (shown at top if day has save abuse)
+  if(s.sa&&s.sa.length>0){
+    const noteItems=s.sa.map(n=>`<li>${escH(n)}</li>`).join('');
+    html+=`<div class="sa-banner">
+      <div class="sa-banner-head">
+        <div class="sa-icon">💾</div>
+        <div class="sa-title">Save Abuse Required Today</div>
+      </div>
+      <ul class="sa-notes">${noteItems}</ul>
+    </div>`;
+  }
+
+  // ── DAY HERO
+  html+=`<div class="dhero" style="border-color:${palColor}20">
+    <div class="dtype ${TYPE_CLS[s.type]||'t-free'}">${TYPE_LABELS[s.type]||'FREE TIME'}</div>
+    <div class="dbigdate">${s.d.toUpperCase()}</div>
+    <div class="ddow">${MONTHS[s.m]||''} · Hurricanehaon's 100% Guide</div>
+  </div>`;
+
+  if(!s.steps||s.steps.length===0){
+    html+=`<div style="padding:28px 16px;text-align:center;color:var(--muted)"><div style="font-size:28px;margin-bottom:8px">📖</div><div>Story day — just follow the game.</div></div>`;
+  }else{
+    const groups=groupSteps(s.steps);
+    for(const g of groups){
+      if(!g.steps.length)continue;
+      html+=`<div class="seg">
+        <div class="seg-hdr">
+          <div class="seg-icon">${TIME_ICONS[g.time]||'🕐'}</div>
+          <div class="seg-label">${g.time}</div>
+        </div>`;
+      g.steps.forEach((st,si)=>{
+        const key=`${curIdx}_${g.time}_${si}`;
+        const isChk=!!checked[key];
+        const isSA=isSaveAbuseStep(st.l,st.c);
+        const badges=extractBadges(st.c||'');
+        const badgeHtml=badges.map(b=>`<span class="badge ${b.cl}">${b.t}</span>`).join('');
+        html+=`<div class="step-row ${isSA?'sa-step':''}" onclick="toggleStep('${key}',this)">
+          <div class="step-chk ${isChk?'done':''}"></div>
+          <div class="step-body">
+            <div class="step-label ${isChk?'done-txt':''}">${isSA?'💾 ':''}${escH(st.l)}</div>
+            ${st.c?`<div class="step-content ${isChk?'done-txt':''}">${escH(st.c)}</div>`:''}
+            ${badgeHtml?`<div style="margin-top:3px">${badgeHtml}</div>`:''}
+          </div>
+        </div>`;
+      });
+      html+='</div>';
+    }
+  }
+
+  html+=`<button class="done-btn ${isDone?'completed':''}" onclick="markDone()">
+    ${isDone?'✓ DAY COMPLETE — TAP TO UNDO':'✓ MARK DAY COMPLETE'}
+  </button>`;
+
+  const dscroll=document.getElementById('dscroll');
+  dscroll.innerHTML=html;
+  dscroll.scrollTop=0;
+}
+
+function toggleStep(key,row){
+  checked[key]=!checked[key];save();
+  row.querySelector('.step-chk').classList.toggle('done',checked[key]);
+  const lbl=row.querySelector('.step-label');
+  const cnt=row.querySelector('.step-content');
+  if(lbl)lbl.classList.toggle('done-txt',checked[key]);
+  if(cnt)cnt.classList.toggle('done-txt',checked[key]);
+}
+
+function markDone(){
+  done[curIdx]=!done[curIdx];save();
+  updateHeader();renderCal();
+  if(done[curIdx]&&curIdx<SCHEDULE.length-1){
+    setTimeout(()=>{curIdx++;calMonth=SCHEDULE[curIdx].m;updateHeader();renderDay();renderCal();},350);
+  }else{renderDay();}
+}
+
+function navDay(dir){
+  const n=curIdx+dir;
+  if(n>=0&&n<SCHEDULE.length){
+    curIdx=n;calMonth=SCHEDULE[curIdx].m;
+    updateHeader();renderDay();
+  }
+}
+
+function renderOverview(){
+  const scroll=document.getElementById('ov-scroll');
+  let html=`<div class="ov-legend">
+    <div class="ov-legend-item"><div class="ov-legend-dot" style="background:rgba(232,0,45,.5)"></div>Palace</div>
+    <div class="ov-legend-item"><div class="ov-legend-dot" style="background:rgba(34,197,94,.5)"></div>Done</div>
+    <div class="ov-legend-item"><div class="ov-legend-dot" style="border:1.5px solid var(--save)"></div>💾 Save Abuse</div>
+    <div class="ov-legend-item"><div class="ov-legend-dot" style="border:1.5px solid var(--red)"></div>Current</div>
+  </div>`;
+  for(const m of MONTH_ORDER){
+    const mDays=SCHEDULE.filter(s=>s.m===m);
+    if(!mDays.length)continue;
+    const mDone=mDays.filter(s=>done[SCHEDULE.indexOf(s)]).length;
+    html+=`<div class="ov-month"><div class="ov-mlabel">${MONTHS[m]||m}<span class="ov-done">${mDone}/${mDays.length}</span></div>`;
+    const startDow=MONTH_DOW[m]||0;
+    const total=MONTH_DAYS[m]||30;
+    let col=0;
+    html+='<div class="ov-week">';
+    for(let i=0;i<startDow;i++){html+='<div class="ov-cell empty"></div>';col++;}
+    for(let d=1;d<=total;d++){
+      if(col>0&&col%7===0)html+='</div><div class="ov-week">';
+      const sidx=dayIdx(m,d);
+      if(sidx<0){html+=`<div class="ov-cell no-data">${d}</div>`;col++;continue;}
+      const isDone=done[sidx];
+      const isCur=sidx===curIdx;
+      const isPal=SCHEDULE[sidx].tags&&SCHEDULE[sidx].tags.includes('palace');
+      const hasSA=SCHEDULE[sidx].sa&&SCHEDULE[sidx].sa.length>0;
+      html+=`<div class="ov-cell ${isDone?'done':''} ${isCur?'cur':''} ${isPal?'pal':''} ${hasSA&&!isDone?'has-sa':''}" onclick="showDay(${sidx})">${d}</div>`;
+      col++;
+    }
+    while(col%7!==0){html+='<div class="ov-cell empty"></div>';col++;}
+    html+='</div></div>';
+  }
+  scroll.innerHTML=html;
+}
+
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nitem').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  const navId={cal:'nav-cal',day:'nav-day',ov:'nav-ov'}[v];
+  if(navId)document.getElementById(navId).classList.add('active');
+  if(v==='cal')renderCal();
+  if(v==='ov')renderOverview();
+}
+
+(function init(){
+  for(let i=0;i<SCHEDULE.length;i++){if(!done[i]){curIdx=i;break;}}
+  calMonth=SCHEDULE[curIdx].m;
+  updateHeader();renderCal();
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(r => console.log('SW registered:', r.scope))
+      .catch(e => console.log('SW failed:', e));
+  });
+}
+</script>
+</body>
+</html>
